@@ -1,0 +1,16 @@
+# Build results
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+
+# Rider / VS Code
+.idea/
+.vscode/
+.vs/
+
+# OS noise
+.DS_Store
+Thumbs.db

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>DockManager.App</RootNamespace>
+    <AssemblyName>DockManager</AssemblyName>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>DockManager.App.Program</StartupObject>
+    <Description>Dock Manager - a minimal vertical edge dock for Windows.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DockManager.Core\DockManager.Core.csproj" />
+  </ItemGroup>
+
+</Project>

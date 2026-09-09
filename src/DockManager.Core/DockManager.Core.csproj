@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>DockManager.Core</RootNamespace>
+    <AssemblyName>DockManager.Core</AssemblyName>
+    <Description>Platform independent core of Dock Manager: items, settings, layout math, visibility state machine and window-state tracking. Contains no WPF/Win32 dependencies so it can be unit tested anywhere.</Description>
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+
+</Project>
