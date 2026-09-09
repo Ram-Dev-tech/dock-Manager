@@ -55,7 +55,7 @@ public sealed class ProcessResolver
 
     private static string QueryImageName(uint processId)
     {
-        var handle = NativeMethods.OpenProcess(NativeMethods.ProcessQueryLimitedInformation, false, processId);
+        var handle = Win32.OpenProcess(Win32.ProcessQueryLimitedInformation, false, processId);
         if (handle == IntPtr.Zero)
         {
             return string.Empty;
@@ -65,7 +65,7 @@ public sealed class ProcessResolver
         {
             var builder = new StringBuilder(1024);
             var size = (uint)builder.Capacity;
-            return NativeMethods.QueryFullProcessImageName(handle, 0, builder, ref size)
+            return Win32.QueryFullProcessImageName(handle, 0, builder, ref size)
                 ? builder.ToString(0, (int)size)
                 : string.Empty;
         }
@@ -75,7 +75,7 @@ public sealed class ProcessResolver
         }
         finally
         {
-            NativeMethods.CloseHandle(handle);
+            Win32.CloseHandle(handle);
         }
     }
 }

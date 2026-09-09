@@ -7,10 +7,10 @@ namespace DockManager.App.Dock;
 /// window is positioned with <c>SetWindowPos</c>; WPF's own Left/Top are avoided so the dock stays
 /// correct on multi monitor setups with mixed DPI.
 /// </summary>
-internal sealed record MonitorGeometry(NativeMethods.RECT WorkArea, double DpiScale, IntPtr Monitor)
+internal sealed record MonitorGeometry(Win32.RECT WorkArea, double DpiScale, IntPtr Monitor)
 {
     public static MonitorGeometry Unknown { get; } = new(
-        new NativeMethods.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1040 },
+        new Win32.RECT { Left = 0, Top = 0, Right = 1920, Bottom = 1040 },
         1d,
         IntPtr.Zero);
 
@@ -37,16 +37,16 @@ internal sealed class MonitorInfoSource
     public MonitorGeometry GetFor(IntPtr ownerWindow)
     {
         var monitor = ownerWindow != IntPtr.Zero
-            ? NativeMethods.MonitorFromWindow(ownerWindow, NativeMethods.MonitorDefaultToNearest)
-            : NativeMethods.MonitorFromPoint(new NativeMethods.POINT { X = 0, Y = 0 }, 1 /* MONITOR_DEFAULTTOPRIMARY */);
+            ? Win32.MonitorFromWindow(ownerWindow, Win32.MonitorDefaultToNearest)
+            : Win32.MonitorFromPoint(new Win32.POINT { X = 0, Y = 0 }, 1 /* MONITOR_DEFAULTTOPRIMARY */);
 
         if (monitor == IntPtr.Zero)
         {
             return MonitorGeometry.Unknown;
         }
 
-        var info = new NativeMethods.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFO>() };
-        if (!NativeMethods.GetMonitorInfo(monitor, ref info))
+        var info = new Win32.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<Win32.MONITORINFO>() };
+        if (!Win32.GetMonitorInfo(monitor, ref info))
         {
             return MonitorGeometry.Unknown;
         }
@@ -56,13 +56,13 @@ internal sealed class MonitorInfoSource
 
     /// <summary>Returns the monitor handle that contains a physical screen point.</summary>
     public IntPtr MonitorFromPoint(int x, int y)
-        => NativeMethods.MonitorFromPoint(new NativeMethods.POINT { X = x, Y = y }, NativeMethods.MonitorDefaultToNearest);
+        => Win32.MonitorFromPoint(new Win32.POINT { X = x, Y = y }, Win32.MonitorDefaultToNearest);
 
     private static double GetDpiScale(IntPtr monitor)
     {
         try
         {
-            if (NativeMethods.GetDpiForMonitor(monitor, 0 /* MDT_EFFECTIVE_DPI */, out var dpiX, out _) == 0 && dpiX > 0)
+            if (Win32.GetDpiForMonitor(monitor, 0 /* MDT_EFFECTIVE_DPI */, out var dpiX, out _) == 0 && dpiX > 0)
             {
                 return dpiX / 96d;
             }

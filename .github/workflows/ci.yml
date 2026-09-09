@@ -22,19 +22,32 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Test
-        run: >
-          dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj
-          --configuration Release
-          --logger "trx;LogFileName=core-tests.trx"
-          --results-directory TestResults
+        id: test
+        continue-on-error: true
+        run: |
+          dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj \
+            --configuration Release \
+            --logger "console;verbosity=normal" > test-output.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat test-output.txt
 
-      - name: Upload test results
+      # Build/test failures are re-emitted as workflow annotations so they are readable through the
+      # GitHub API without downloading the raw log archive.
+      - name: Surface failures
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: core-test-results
-          path: TestResults
-          if-no-files-found: ignore
+        run: |
+          if [ -f test-output.txt ]; then
+            grep -E "(error [A-Z]+[0-9]+|warning [A-Z]+[0-9]+|\[FAIL\]|^  Failed |Error Message:|Stack Trace:|Assert\.)" test-output.txt \
+              | sed -e 's/%/%25/g' -e 's/\r//g' \
+              | head -n 100 \
+              | while IFS= read -r line; do echo "::error::${line}"; done
+          fi
+
+      - name: Fail when tests failed
+        if: steps.test.outputs.exit_code != '0'
+        run: |
+          echo "Core tests failed with exit code ${{ steps.test.outputs.exit_code }}"
+          exit 1
 
   windows:
     name: Build app (Windows)
@@ -54,12 +67,28 @@ jobs:
         run: dotnet restore DockManager.sln
 
       - name: Build
-        run: dotnet build DockManager.sln --configuration Release --no-restore
+        id: build
+        continue-on-error: true
+        shell: bash
+        run: |
+          dotnet build DockManager.sln --configuration Release --no-restore > build-output.txt 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          cat build-output.txt
 
-      - name: Upload build warnings
+      - name: Surface failures
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build-output
-          path: src/DockManager.App/bin/Release/net8.0-windows/
-          if-no-files-found: ignore
+        shell: bash
+        run: |
+          if [ -f build-output.txt ]; then
+            grep -E "(error [A-Z]+[0-9]+|warning [A-Z]+[0-9]+)" build-output.txt \
+              | sed -e 's/%/%25/g' -e 's/\r//g' \
+              | sort -u \
+              | head -n 100 \
+              | while IFS= read -r line; do echo "::error::${line}"; done
+          fi
+
+      - name: Fail when build failed
+        if: steps.build.outputs.exit_code != '0'
+        run: |
+          echo "Build failed with exit code ${{ steps.build.outputs.exit_code }}"
+          exit 1

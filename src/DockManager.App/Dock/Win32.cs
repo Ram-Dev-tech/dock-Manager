@@ -1,13 +1,13 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace DockManager.App.Dock;
+namespace DockManager.App;
 
 /// <summary>
 /// Every Win32 call the dock needs, in one place. Kept deliberately small: cursor position,
 /// monitor geometry, window enumeration, activation and DWM rounding.
 /// </summary>
-internal static class NativeMethods
+internal static class Win32
 {
     public const int GwlExStyle = -20;
     public const int GwlStyle = -16;

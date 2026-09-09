@@ -1,4 +1,3 @@
-using DockManager.App.Dock;
 using DockManager.Core.Windows;
 
 namespace DockManager.App.Windows;
@@ -41,7 +40,7 @@ public sealed class WindowEnumerator
         var windows = new List<WindowInfo>(32);
 
         // The callback must never throw: an exception inside EnumWindows corrupts the enumeration.
-        NativeMethods.EnumWindows((hwnd, _) =>
+        Win32.EnumWindows((hwnd, _) =>
         {
             try
             {
@@ -64,29 +63,29 @@ public sealed class WindowEnumerator
 
     private WindowInfo? Describe(IntPtr hwnd)
     {
-        if (hwnd == IntPtr.Zero || !NativeMethods.IsWindowVisible(hwnd))
+        if (hwnd == IntPtr.Zero || !Win32.IsWindowVisible(hwnd))
         {
             return null;
         }
 
-        if (NativeMethods.GetWindow(hwnd, NativeMethods.GwOwner) != IntPtr.Zero)
+        if (Win32.GetWindow(hwnd, Win32.GwOwner) != IntPtr.Zero)
         {
             return null;
         }
 
-        var exStyle = NativeMethods.GetWindowLongPtrSafe(hwnd, NativeMethods.GwlExStyle).ToInt64();
-        if ((exStyle & NativeMethods.WsExToolWindow) != 0)
+        var exStyle = Win32.GetWindowLongPtrSafe(hwnd, Win32.GwlExStyle).ToInt64();
+        if ((exStyle & Win32.WsExToolWindow) != 0)
         {
             return null;
         }
 
-        var className = NativeMethods.GetWindowClassName(hwnd);
+        var className = Win32.GetWindowClassName(hwnd);
         if (ExcludedClasses.Contains(className))
         {
             return null;
         }
 
-        var title = NativeMethods.GetWindowTitle(hwnd);
+        var title = Win32.GetWindowTitle(hwnd);
         if (string.IsNullOrWhiteSpace(title))
         {
             return null;
@@ -97,7 +96,7 @@ public sealed class WindowEnumerator
             return null;
         }
 
-        NativeMethods.GetWindowThreadProcessId(hwnd, out var processId);
+        Win32.GetWindowThreadProcessId(hwnd, out var processId);
         if (processId == 0 || processId == (uint)_ownProcessId)
         {
             return null;
@@ -107,7 +106,7 @@ public sealed class WindowEnumerator
         return new WindowInfo(hwnd, executable, (int)processId)
         {
             Title = title,
-            IsMinimized = NativeMethods.IsIconic(hwnd),
+            IsMinimized = Win32.IsIconic(hwnd),
         };
     }
 
@@ -115,7 +114,7 @@ public sealed class WindowEnumerator
     {
         try
         {
-            if (NativeMethods.DwmGetWindowAttribute(hwnd, NativeMethods.DwmwaCloaked, out var cloaked, sizeof(int)) == 0)
+            if (Win32.DwmGetWindowAttribute(hwnd, Win32.DwmwaCloaked, out var cloaked, sizeof(int)) == 0)
             {
                 return cloaked != 0;
             }
