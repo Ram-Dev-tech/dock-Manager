@@ -94,9 +94,12 @@ public class DockViewModelTests
     [Fact]
     public void A_pinned_shortcut_matches_the_running_executable()
     {
+        const string shortcut = @"C:\Start Menu\Google Chrome.lnk";
+        var fileSystem = new FakeFileSystem().WithFile(shortcut).WithFile(Chrome);
+
         var store = new ItemStore();
-        store.Add(new AppItem("chrome", @"C:\Start Menu\Google Chrome.lnk") { ExecutablePath = Chrome });
-        var viewModel = new DockViewModel(store, _fileSystem, DockLayoutMetrics.ForIconSize(32));
+        store.Add(new AppItem("chrome", shortcut) { ExecutablePath = Chrome });
+        var viewModel = new DockViewModel(store, fileSystem, DockLayoutMetrics.ForIconSize(32));
 
         viewModel.RefreshRunning(RunningAppIndex.Build([Window(10, Chrome)]), IntPtr.Zero);
 

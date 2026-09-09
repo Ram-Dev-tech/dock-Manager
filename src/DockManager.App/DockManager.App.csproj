@@ -6,14 +6,22 @@
     <RootNamespace>DockManager.App</RootNamespace>
     <AssemblyName>DockManager</AssemblyName>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>DockManager.App.Program</StartupObject>
+    <ApplicationIcon>Assets\DockManager.ico</ApplicationIcon>
     <Description>Dock Manager - a minimal vertical edge dock for Windows.</Description>
+
+    <!-- Implicit usings are replaced by GlobalUsings.cs so that System.Windows.Forms can never be
+         pulled in by accident and shadow WPF types such as MessageBox or Application. -->
+    <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DockManager.Core\DockManager.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\DockManager.ico" />
   </ItemGroup>
 
 </Project>

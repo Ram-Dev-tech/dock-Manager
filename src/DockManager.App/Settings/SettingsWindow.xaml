@@ -1,0 +1,71 @@
+<Window x:Class="DockManager.App.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dock Manager Settings"
+        Width="360"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF1C1C21"
+        Foreground="#FFEEEEEE"
+        ShowInTaskbar="True"
+        TextOptions.TextFormattingMode="Display">
+
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#FFEEEEEE" />
+        </Style>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#8AFFFFFF" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="SectionBox" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,0,18" />
+        </Style>
+    </Window.Resources>
+
+    <StackPanel Margin="22,18">
+        <StackPanel Style="{StaticResource SectionBox}">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="DOCK" />
+            <StackPanel Orientation="Horizontal">
+                <RadioButton x:Name="EdgeLeft" Content="Left" Foreground="#FFEEEEEE" Margin="0,0,18,0" Checked="OnEdgeChecked" />
+                <RadioButton x:Name="EdgeRight" Content="Right" Foreground="#FFEEEEEE" Checked="OnEdgeChecked" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Style="{StaticResource SectionBox}">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="APPEARANCE" />
+            <TextBlock Text="Dock size" FontSize="12" Margin="0,0,0,4" />
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <RadioButton x:Name="SizeCompact" Content="Compact" Foreground="#FFEEEEEE" Margin="0,0,12,0" Checked="OnSizeChecked" />
+                <RadioButton x:Name="SizeNormal" Content="Normal" Foreground="#FFEEEEEE" Margin="0,0,12,0" Checked="OnSizeChecked" />
+                <RadioButton x:Name="SizeLarge" Content="Large" Foreground="#FFEEEEEE" Checked="OnSizeChecked" />
+            </StackPanel>
+            <TextBlock Text="Icon size" FontSize="12" Margin="0,0,0,4" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="34" />
+                </Grid.ColumnDefinitions>
+                <Slider x:Name="IconSlider" Minimum="20" Maximum="56" SmallChange="1" ValueChanged="OnIconSliderChanged" />
+                <TextBlock x:Name="IconValue" Grid.Column="1" TextAlignment="Right" VerticalAlignment="Center" FontSize="12" />
+            </Grid>
+        </StackPanel>
+
+        <StackPanel Style="{StaticResource SectionBox}">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="BEHAVIOUR" />
+            <CheckBox x:Name="AutoHideBox" Content="Automatically hide the dock when the cursor leaves" Foreground="#FFEEEEEE" Margin="0,0,0,8" Checked="OnAutoHideChanged" Unchecked="OnAutoHideChanged" />
+            <TextBlock x:Name="HideDelayLabel" Text="Hide delay" FontSize="12" Margin="0,0,0,4" />
+            <Slider x:Name="HideDelaySlider" Minimum="0" Maximum="2000" SmallChange="50" LargeChange="100" ValueChanged="OnHideDelayChanged" />
+        </StackPanel>
+
+        <StackPanel Style="{StaticResource SectionBox}">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="STARTUP" />
+            <CheckBox x:Name="StartupBox" Content="Launch Dock Manager when Windows starts" Foreground="#FFEEEEEE" Checked="OnStartupChanged" Unchecked="OnStartupChanged" />
+        </StackPanel>
+
+        <Button Content="Close" Click="OnCloseClicked" HorizontalAlignment="Right" Padding="18,5" />
+    </StackPanel>
+</Window>

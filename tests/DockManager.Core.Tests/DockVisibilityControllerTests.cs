@@ -165,13 +165,16 @@ public class DockVisibilityControllerTests
     {
         var controller = CreateController(builder => builder.AutoHide = false);
         controller.Update(false, false, 1000);
+        controller.Update(false, false, 1140);
         Assert.Equal(DockVisibilityState.Visible, controller.State);
 
         controller.ApplyOptions(new DockVisibilityOptions { AutoHide = true, HideDelayMs = 100 });
-        controller.Update(false, false, 1010);
+
+        // The cursor is away, but the grace period has not elapsed yet.
+        controller.Update(false, false, 1150);
         Assert.Equal(DockVisibilityState.Visible, controller.State);
 
-        controller.Update(false, false, 1110);
+        controller.Update(false, false, 1250);
         Assert.Equal(DockVisibilityState.Hiding, controller.State);
     }
 

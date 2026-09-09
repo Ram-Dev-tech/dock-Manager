@@ -1,3 +1,4 @@
+using System.IO;
 using DockManager.Core.Diagnostics;
 
 namespace DockManager.App.Diagnostics;

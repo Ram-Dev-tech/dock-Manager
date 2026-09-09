@@ -1,0 +1,200 @@
+<Window x:Class="DockManager.App.Dock.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:DockManager.App.Ui"
+        xmlns:vm="clr-namespace:DockManager.Core.Ui;assembly=DockManager.Core"
+        Title="Dock Manager"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Focusable="False"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        Left="-32000"
+        Top="0"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        AllowDrop="True"
+        DragOver="OnPanelDragOver"
+        Drop="OnPanelDrop"
+        MouseEnter="OnPanelMouseEnter"
+        MouseLeave="OnPanelMouseLeave">
+
+    <Window.Resources>
+        <ui:IconConverter x:Key="IconConverter" />
+
+        <!-- Fixed slot size keeps the rendered layout identical to DockMetrics.Compute. -->
+        <Style x:Key="SlotStyle" TargetType="{x:Type ContentPresenter}">
+            <Setter Property="Width" Value="{DynamicResource ItemSize}" />
+            <Setter Property="Height" Value="{DynamicResource ItemSize}" />
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+
+        <Style x:Key="FooterButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Width" Value="{DynamicResource ItemSize}" />
+            <Setter Property="Height" Value="{DynamicResource ItemSize}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#D9FFFFFF" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border x:Name="ButtonBackground"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="{DynamicResource ItemCornerRadius}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBackground" Property="Background" Value="#24FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBackground" Property="Background" Value="#33FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <DataTemplate x:Key="ItemTemplate" DataType="{x:Type vm:DockItemViewModel}">
+            <Grid Background="Transparent"
+                  AllowDrop="True"
+                  ToolTip="{Binding Tooltip}"
+                  MouseLeftButtonDown="OnItemMouseLeftButtonDown"
+                  MouseLeftButtonUp="OnItemMouseLeftButtonUp"
+                  MouseMove="OnItemMouseMove"
+                  MouseRightButtonUp="OnItemMouseRightButtonUp"
+                  DragOver="OnItemDragOver"
+                  Drop="OnItemDrop">
+                <Border x:Name="Highlight"
+                        Background="Transparent"
+                        CornerRadius="{DynamicResource ItemCornerRadius}" />
+                <Image x:Name="Icon"
+                       Source="{Binding IconKey, Converter={StaticResource IconConverter}}"
+                       Width="{DynamicResource IconSize}"
+                       Height="{DynamicResource IconSize}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <Ellipse x:Name="RunningIndicator"
+                         Width="{DynamicResource RunningIndicatorSize}"
+                         Height="{DynamicResource RunningIndicatorSize}"
+                         Margin="0,0,5,5"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Bottom"
+                         Fill="#FF6EC1FF"
+                         Visibility="Collapsed" />
+                <Border x:Name="MissingBadge"
+                        Width="12"
+                        Height="12"
+                        Margin="0,4,4,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Background="#E0B3261E"
+                        CornerRadius="6"
+                        Visibility="Collapsed">
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="9"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               Text="!" />
+                </Border>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsRunning}" Value="True">
+                    <Setter TargetName="RunningIndicator" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter TargetName="Highlight" Property="Background" Value="#26FFFFFF" />
+                    <Setter TargetName="RunningIndicator" Property="Fill" Value="#FFFFFFFF" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                    <Setter TargetName="Icon" Property="Opacity" Value="0.3" />
+                    <Setter TargetName="MissingBadge" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Border x:Name="Panel"
+            Padding="{DynamicResource DockPadding}"
+            Background="{DynamicResource PanelBackground}"
+            BorderBrush="#2EFFFFFF"
+            BorderThickness="1"
+            CornerRadius="{DynamicResource PanelCornerRadius}"
+            MouseRightButtonUp="OnPanelMouseRightButtonUp">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="16"
+                              Color="#FF000000"
+                              Direction="270"
+                              Opacity="0.5"
+                              ShadowDepth="2" />
+        </Border.Effect>
+
+        <Grid>
+            <StackPanel Orientation="Vertical">
+                <ItemsControl x:Name="ApplicationsList"
+                              Focusable="False"
+                              ItemContainerStyle="{StaticResource SlotStyle}"
+                              ItemTemplate="{StaticResource ItemTemplate}"
+                              ItemsSource="{Binding Applications}" />
+
+                <Rectangle x:Name="ApplicationsSeparator"
+                           Height="{DynamicResource SeparatorThickness}"
+                           Margin="{DynamicResource SeparatorMargin}"
+                           Width="{DynamicResource SeparatorWidth}"
+                           Fill="#24FFFFFF" />
+
+                <ItemsControl x:Name="FilesList"
+                              Focusable="False"
+                              ItemContainerStyle="{StaticResource SlotStyle}"
+                              ItemTemplate="{StaticResource ItemTemplate}"
+                              ItemsSource="{Binding Files}" />
+
+                <Rectangle x:Name="FilesSeparator"
+                           Height="{DynamicResource SeparatorThickness}"
+                           Margin="{DynamicResource SeparatorMargin}"
+                           Width="{DynamicResource SeparatorWidth}"
+                           Fill="#24FFFFFF" />
+
+                <StackPanel Orientation="Vertical">
+                    <Button x:Name="AddButton"
+                            Click="OnAddClicked"
+                            Style="{StaticResource FooterButtonStyle}"
+                            ToolTip="Add an application, file or folder">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="{DynamicResource GlyphFontSize}"
+                                   Text="&#xE710;" />
+                    </Button>
+                    <Button x:Name="SettingsButton"
+                            Click="OnSettingsClicked"
+                            Style="{StaticResource FooterButtonStyle}"
+                            ToolTip="Dock settings">
+                        <TextBlock FontFamily="Segoe MDL2 Assets"
+                                   FontSize="{DynamicResource GlyphFontSize}"
+                                   Text="&#xE713;" />
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Insertion position while reordering; never intercepts the mouse. -->
+            <Canvas x:Name="Overlay" IsHitTestVisible="False">
+                <Rectangle x:Name="InsertionIndicator"
+                           Height="2"
+                           Fill="#FF6EC1FF"
+                           RadiusX="1"
+                           RadiusY="1"
+                           Visibility="Collapsed" />
+            </Canvas>
+        </Grid>
+    </Border>
+</Window>

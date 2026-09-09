@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using DockManager.Core.Dock;
 using DockManager.Core.Items;
 using DockManager.Core.Shell;
@@ -16,8 +17,8 @@ public sealed class DockViewModel
     private readonly ItemStore _store;
     private readonly IFileSystemProbe _fileSystem;
     private readonly Dictionary<string, DockItemViewModel> _byId = new(StringComparer.Ordinal);
-    private readonly List<DockItemViewModel> _applications = [];
-    private readonly List<DockItemViewModel> _files = [];
+    private readonly ObservableCollection<DockItemViewModel> _applications = [];
+    private readonly ObservableCollection<DockItemViewModel> _files = [];
 
     private DockLayoutMetrics _metrics;
     private RunningAppIndex _running = RunningAppIndex.Empty;
@@ -158,16 +159,42 @@ public sealed class DockViewModel
             _byId.Remove(id);
         }
 
-        _applications.Clear();
-        _applications.AddRange(nextApplications);
-        _files.Clear();
-        _files.AddRange(nextFiles);
+        Sync(_applications, nextApplications);
+        Sync(_files, nextFiles);
 
         RecomputePlan();
         ContentChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void ApplyState(List<DockItemViewModel> items, RunningApp? activeApp, bool refreshAvailability)
+    /// <summary>
+    /// Adjusts <paramref name="target"/> to match <paramref name="desired"/> with the minimum number
+    /// of collection notifications, so WPF reuses item containers and icons instead of rebuilding.
+    /// </summary>
+    private static void Sync(ObservableCollection<DockItemViewModel> target, List<DockItemViewModel> desired)
+    {
+        for (var i = target.Count - 1; i >= 0; i--)
+        {
+            if (!desired.Contains(target[i]))
+            {
+                target.RemoveAt(i);
+            }
+        }
+
+        for (var i = 0; i < desired.Count; i++)
+        {
+            var current = target.IndexOf(desired[i]);
+            if (current < 0)
+            {
+                target.Insert(i, desired[i]);
+            }
+            else if (current != i)
+            {
+                target.Move(current, i);
+            }
+        }
+    }
+
+    private void ApplyState(IReadOnlyList<DockItemViewModel> items, RunningApp? activeApp, bool refreshAvailability)
     {
         foreach (var viewModel in items)
         {

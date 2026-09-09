@@ -25,11 +25,11 @@ jobs:
         id: test
         continue-on-error: true
         run: |
+          set +e
           dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj \
             --configuration Release \
-            --logger "console;verbosity=normal" > test-output.txt 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-          cat test-output.txt
+            --logger "console;verbosity=normal" 2>&1 | tee test-output.txt
+          exit "${PIPESTATUS[0]}"
 
       # Build/test failures are re-emitted as workflow annotations so they are readable through the
       # GitHub API without downloading the raw log archive.
@@ -44,9 +44,9 @@ jobs:
           fi
 
       - name: Fail when tests failed
-        if: steps.test.outputs.exit_code != '0'
+        if: always() && steps.test.outcome == 'failure'
         run: |
-          echo "Core tests failed with exit code ${{ steps.test.outputs.exit_code }}"
+          echo "Core tests failed."
           exit 1
 
   windows:
@@ -71,9 +71,9 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          dotnet build DockManager.sln --configuration Release --no-restore > build-output.txt 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-          cat build-output.txt
+          set +e
+          dotnet build DockManager.sln --configuration Release --no-restore 2>&1 | tee build-output.txt
+          exit "${PIPESTATUS[0]}"
 
       - name: Surface failures
         if: always()
@@ -88,7 +88,7 @@ jobs:
           fi
 
       - name: Fail when build failed
-        if: steps.build.outputs.exit_code != '0'
+        if: always() && steps.build.outcome == 'failure'
         run: |
-          echo "Build failed with exit code ${{ steps.build.outputs.exit_code }}"
+          echo "Build failed."
           exit 1
