@@ -40,8 +40,9 @@ jobs:
             grep -E "(error [A-Z]+[0-9]+|warning [A-Z]+[0-9]+|\[FAIL\]|^  Failed |Error Message:|Stack Trace:|Assert\.)" test-output.txt \
               | sed -e 's/%/%25/g' -e 's/\r//g' \
               | head -n 100 \
-              | while IFS= read -r line; do echo "::error::${line}"; done
+              | while IFS= read -r line; do echo "::error::${line}"; done || true
           fi
+          exit 0
 
       - name: Fail when tests failed
         if: always() && steps.test.outcome == 'failure'
@@ -84,8 +85,9 @@ jobs:
               | sed -e 's/%/%25/g' -e 's/\r//g' \
               | sort -u \
               | head -n 100 \
-              | while IFS= read -r line; do echo "::error::${line}"; done
+              | while IFS= read -r line; do echo "::error::${line}"; done || true
           fi
+          exit 0
 
       - name: Fail when build failed
         if: always() && steps.build.outcome == 'failure'
