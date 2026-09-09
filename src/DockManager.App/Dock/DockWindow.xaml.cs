@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using DockManager.App.Composition;
 using DockManager.App.Ui;
 using DockManager.App.Windows;
+using DockManager.Core.Diagnostics;
 using DockManager.Core.Dock;
 using DockManager.Core.Items;
 using DockManager.Core.Settings;
