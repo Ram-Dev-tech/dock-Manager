@@ -205,7 +205,16 @@ public sealed class ItemStore
         }
 
         var sectionItems = GetItems(item.Section);
-        var index = sectionItems.IndexOf(item);
+        var index = -1;
+        for (var i = 0; i < sectionItems.Count; i++)
+        {
+            if (ReferenceEquals(sectionItems[i], item))
+            {
+                index = i;
+                break;
+            }
+        }
+
         if (index < 0)
         {
             return false;

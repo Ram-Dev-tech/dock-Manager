@@ -23,7 +23,7 @@ public class ItemStoreTests
         store.Add(App(@"C:\apps\code.exe"));
 
         Assert.Equal(
-            [@"C:\apps\chrome.exe", @"C:\apps\code.exe", @"C:\data\notes.txt", @"C:\data\projects"],
+            new[] { @"C:\apps\chrome.exe", @"C:\apps\code.exe", @"C:\data\notes.txt", @"C:\data\projects" },
             store.Items.Select(item => item.TargetPath).ToArray());
 
         Assert.Equal(2, store.CountOf(DockSection.Applications));
@@ -85,7 +85,7 @@ public class ItemStoreTests
         Assert.True(store.Move(spotify.Id, 0));
 
         Assert.Equal(
-            [@"C:\apps\spotify.exe", @"C:\apps\chrome.exe", @"C:\apps\code.exe", @"C:\data\notes.txt"],
+            new[] { @"C:\apps\spotify.exe", @"C:\apps\chrome.exe", @"C:\apps\code.exe", @"C:\data\notes.txt" },
             store.Items.Select(item => item.TargetPath).ToArray());
     }
 
@@ -117,11 +117,11 @@ public class ItemStoreTests
         store.Add(c);
 
         Assert.True(store.MoveUp(c.Id));
-        Assert.Equal([a.Id, c.Id, b.Id], store.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { a.Id, c.Id, b.Id }, store.Items.Select(item => item.Id).ToArray());
 
         Assert.False(store.MoveUp(a.Id));
         Assert.True(store.MoveDown(a.Id));
-        Assert.Equal([c.Id, a.Id, b.Id], store.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { c.Id, a.Id, b.Id }, store.Items.Select(item => item.Id).ToArray());
 
         Assert.False(store.MoveDown(b.Id));
     }
