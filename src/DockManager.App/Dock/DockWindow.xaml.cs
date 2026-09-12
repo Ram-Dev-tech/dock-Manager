@@ -377,6 +377,11 @@ public sealed partial class DockWindow : Window
         // Theme brushes live at application level so the dock and the hover panel swap together.
         ThemeService.Apply(ThemeService.Resolve(settings.Theme), _look.PanelOpacity);
 
+        // Tooltips open toward the screen edge, away from where the hover panel appears.
+        Resources["TooltipPlacement"] = settings.Edge == DockEdge.Left
+            ? System.Windows.Controls.Primitives.PlacementMode.Left
+            : System.Windows.Controls.Primitives.PlacementMode.Right;
+
         ToolTipService.SetIsEnabled(Panel, settings.ShowTooltips);
     }
 
@@ -461,7 +466,9 @@ public sealed partial class DockWindow : Window
 
     private void OnSearchPreviewMouseDown(object sender, MouseButtonEventArgs e)
     {
-        // The dock window never activates, so focus has to be moved by hand.
+        // The dock window never activates on its own; while the user types in the filter it has
+        // to take activation explicitly or the keystrokes would go to the previous window.
+        Win32.SetForegroundWindow(_hwnd);
         SearchBox.Focus();
     }
 
