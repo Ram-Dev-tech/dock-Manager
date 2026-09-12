@@ -68,7 +68,20 @@ public sealed class ItemStore
     /// <summary>Adds an item at the end of its section. Returns false when it is already pinned.</summary>
     public bool Add(PinnedItem? item)
     {
-        if (item is null || string.IsNullOrWhiteSpace(item.TargetPath))
+        if (item is null)
+        {
+            return false;
+        }
+
+        // Groups and separators carry no target: no dedup, no target validation.
+        if (item.Kind.IsOrganizational())
+        {
+            _items.Insert(EndIndexOfSection(item.Section), item);
+            OnChanged();
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(item.TargetPath))
         {
             return false;
         }
@@ -79,6 +92,115 @@ public sealed class ItemStore
         }
 
         _items.Insert(EndIndexOfSection(item.Section), item);
+        OnChanged();
+        return true;
+    }
+
+    /// <summary>Appends a new group header to the end of a section and returns it.</summary>
+    public GroupHeaderItem AddGroup(DockSection section, string name)
+    {
+        var header = new GroupHeaderItem(null, name, section);
+        Add(header);
+        return header;
+    }
+
+    /// <summary>Appends a visual separator to the end of a section and returns it.</summary>
+    public SeparatorItem AddSeparator(DockSection section)
+    {
+        var separator = new SeparatorItem(null, section);
+        Add(separator);
+        return separator;
+    }
+
+    /// <summary>All group headers of a section, in dock order.</summary>
+    public IReadOnlyList<GroupHeaderItem> GetGroups(DockSection section)
+        => GetItems(section).OfType<GroupHeaderItem>().ToList();
+
+    /// <summary>
+    /// The group an item currently belongs to: the nearest header above it in the same section, or
+    /// <c>null</c> when the item sits before the first header (ungrouped).
+    /// </summary>
+    public GroupHeaderItem? FindGroupOf(string? id)
+    {
+        var item = Get(id);
+        if (item is null || item.Kind.IsOrganizational())
+        {
+            return null;
+        }
+
+        GroupHeaderItem? current = null;
+        foreach (var candidate in GetItems(item.Section))
+        {
+            if (ReferenceEquals(candidate, item))
+            {
+                return current;
+            }
+
+            if (candidate is GroupHeaderItem header)
+            {
+                current = header;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Moves an item to the end of a group's span, i.e. just before the next group header. A null
+    /// <paramref name="groupHeaderId"/> moves the item to the end of its section (ungrouped area).
+    /// </summary>
+    public bool MoveToGroup(string? id, string? groupHeaderId)
+    {
+        var item = Get(id);
+        if (item is null || item.Kind.IsOrganizational())
+        {
+            return false;
+        }
+
+        var sectionItems = GetItems(item.Section).ToList();
+        var currentIndex = sectionItems.IndexOf(item);
+        if (currentIndex < 0)
+        {
+            return false;
+        }
+
+        PinnedItem anchor;
+        if (groupHeaderId is null)
+        {
+            anchor = sectionItems[^1];
+        }
+        else
+        {
+            var headerIndex = sectionItems.FindIndex(candidate =>
+                candidate is GroupHeaderItem header && header.Id == groupHeaderId);
+            if (headerIndex < 0)
+            {
+                return false;
+            }
+
+            var endIndex = sectionItems.Count - 1;
+            for (var i = headerIndex + 1; i < sectionItems.Count; i++)
+            {
+                if (sectionItems[i] is GroupHeaderItem)
+                {
+                    endIndex = i - 1;
+                    break;
+                }
+            }
+
+            anchor = sectionItems[endIndex];
+        }
+
+        // Already in place (it is the anchor itself or sits directly after it): nothing to do.
+        if (ReferenceEquals(anchor, item)
+            || (currentIndex > 0 && ReferenceEquals(sectionItems[currentIndex - 1], anchor)))
+        {
+            return false;
+        }
+
+        sectionItems.Remove(item);
+        sectionItems.Insert(sectionItems.IndexOf(anchor) + 1, item);
+        RebuildSection(item.Section, sectionItems);
         OnChanged();
         return true;
     }

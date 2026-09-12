@@ -96,13 +96,14 @@ public class SettingsStoreTests
         {
             Edge = (DockEdge)42,
             Size = (DockSizeScale)7,
-            EdgeActivationPixels = 0,
+            Sensitivity = (EdgeSensitivity)99,
             CursorPollIntervalMs = 1,
         }.Sanitized();
 
         Assert.Equal(DockEdge.Left, settings.Edge);
         Assert.Equal(DockSizeScale.Normal, settings.Size);
-        Assert.Equal(1, settings.EdgeActivationPixels);
+        Assert.Equal(EdgeSensitivity.Normal, settings.Sensitivity);
+        Assert.Equal(2, settings.EdgeActivationPixels);
         Assert.Equal(15, settings.CursorPollIntervalMs);
     }
 

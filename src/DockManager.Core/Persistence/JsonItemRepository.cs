@@ -57,10 +57,14 @@ public sealed class JsonItemRepository : IItemRepository
                     continue;
                 }
 
-                var key = PathNormalizer.NormalizeKey(item.TargetPath);
-                if (key.Length == 0 || !seen.Add(key))
+                // Organizational entries have no target and are never duplicates of each other.
+                if (!item.Kind.IsOrganizational())
                 {
-                    continue;
+                    var key = PathNormalizer.NormalizeKey(item.TargetPath);
+                    if (key.Length == 0 || !seen.Add(key))
+                    {
+                        continue;
+                    }
                 }
 
                 items.Add(item);

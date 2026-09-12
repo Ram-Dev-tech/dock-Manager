@@ -15,6 +15,7 @@ public sealed class DockItemViewModel : INotifyPropertyChanged
     private PinnedItemRunState _runState;
     private int _windowCount;
     private string? _tooltip;
+    private bool _isSelected;
 
     public DockItemViewModel(PinnedItem item)
     {
@@ -63,6 +64,13 @@ public sealed class DockItemViewModel : INotifyPropertyChanged
     {
         get => _windowCount;
         private set => SetField(ref _windowCount, value);
+    }
+
+    /// <summary>Keyboard selection highlight, used by the global next/previous shortcuts.</summary>
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set => SetField(ref _isSelected, value);
     }
 
     /// <summary>Short text used for the indicator and the tooltip.</summary>

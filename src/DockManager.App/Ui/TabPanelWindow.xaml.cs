@@ -40,14 +40,14 @@ public sealed partial class TabPanelWindow : Window
     public bool IsCreated => _hwnd != IntPtr.Zero;
 
     /// <summary>Whether the cursor (physical pixels) is inside the panel window.</summary>
-    public bool ContainsPoint(Win32.POINT point)
+    internal bool ContainsPoint(Win32.POINT point)
         => _hwnd != IntPtr.Zero
            && Win32.GetWindowRect(_hwnd, out var rect)
            && point.X >= rect.Left && point.X < rect.Right
            && point.Y >= rect.Top && point.Y < rect.Bottom;
 
     /// <summary>The panel's physical rectangle, or an empty rect while it is off screen.</summary>
-    public bool TryGetPhysicalRect(out Win32.RECT rect)
+    internal bool TryGetPhysicalRect(out Win32.RECT rect)
     {
         rect = default;
         return _hwnd != IntPtr.Zero && Win32.GetWindowRect(_hwnd, out rect) && rect.Left >= -16000;

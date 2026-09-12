@@ -1,5 +1,6 @@
 using DockManager.Core.Diagnostics;
 using DockManager.Core.Integrations;
+using DockManager.Core.Shell;
 using DockManager.Core.Windows;
 
 namespace DockManager.App.Integrations;
@@ -67,6 +68,23 @@ public sealed class VSCodeIntegration : IApplicationIntegration
     {
         ArgumentNullException.ThrowIfNull(item);
         return Task.FromResult(item.WindowHandle != IntPtr.Zero && _activator.ActivateWindow(item.WindowHandle));
+    }
+
+    public IReadOnlyList<QuickAction> GetQuickActions(RunningApp app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        if (string.IsNullOrWhiteSpace(app.ExecutablePath))
+        {
+            return [];
+        }
+
+        return
+        [
+            new QuickAction(
+                "New window",
+                new LaunchRequest(app.ExecutablePath, LaunchVerb.Execute) { Arguments = "--new-window" }),
+        ];
     }
 
     private static IReadOnlyList<AppContentItem> ReadContent(RunningApp app, IntegrationOptions options)

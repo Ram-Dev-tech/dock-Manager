@@ -67,6 +67,12 @@ public sealed class ExplorerIntegration : IApplicationIntegration
         return Task.FromResult(item.WindowHandle != IntPtr.Zero && _activator.ActivateWindow(item.WindowHandle));
     }
 
+    public IReadOnlyList<QuickAction> GetQuickActions(RunningApp app) =>
+    [
+        new QuickAction("New window", new LaunchRequest("explorer.exe", LaunchVerb.Execute)),
+        new QuickAction("Open Downloads", new LaunchRequest("shell:Downloads", LaunchVerb.Open)),
+    ];
+
     private IReadOnlyList<AppContentItem> ReadContent(RunningApp app, IntegrationOptions options)
     {
         var folders = ReadShellFolders();

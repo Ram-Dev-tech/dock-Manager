@@ -53,9 +53,11 @@ public class Phase2SettingsTests
         }
         """;
 
-        var loaded = System.Text.Json.JsonSerializer.Deserialize<DockSettings>(
-            json,
-            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        // Enums are persisted as strings by the repository, so the test mirrors that configuration.
+        var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        options.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+        var loaded = System.Text.Json.JsonSerializer.Deserialize<DockSettings>(json, options);
 
         Assert.NotNull(loaded);
         Assert.Equal(DockManager.Core.Dock.DockEdge.Right, loaded!.Edge);

@@ -33,7 +33,7 @@ public abstract class PinnedItem
     /// <summary>Which section of the dock this item is rendered in.</summary>
     public abstract DockSection Section { get; }
 
-    public string EffectiveName
+    public virtual string EffectiveName
     {
         get
         {

@@ -35,4 +35,10 @@ public interface IApplicationIntegration
     /// fall back to plain window activation.
     /// </summary>
     Task<bool> ActivateItemAsync(AppContentItem item, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The extra context menu entries this integration can run reliably for the given application
+    /// (e.g. "New window"). Empty for applications without known safe actions.
+    /// </summary>
+    IReadOnlyList<QuickAction> GetQuickActions(RunningApp app);
 }

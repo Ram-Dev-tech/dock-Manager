@@ -30,6 +30,8 @@ public class ApplicationManagerTests
 
         public Task<bool> ActivateItemAsync(AppContentItem item, CancellationToken cancellationToken)
             => Task.FromResult(true);
+
+        public IReadOnlyList<QuickAction> GetQuickActions(RunningApp app) => [];
     }
 
     private static RunningApp App(string executable) => new()

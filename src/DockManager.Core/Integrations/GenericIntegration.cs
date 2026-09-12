@@ -69,4 +69,7 @@ public sealed class GenericIntegration : IApplicationIntegration
         var activated = item.WindowHandle != IntPtr.Zero && _activator.ActivateWindow(item.WindowHandle);
         return Task.FromResult(activated);
     }
+
+    /// <summary>No app specific actions are known, so none are offered.</summary>
+    public IReadOnlyList<QuickAction> GetQuickActions(RunningApp app) => [];
 }

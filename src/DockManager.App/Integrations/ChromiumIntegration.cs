@@ -1,6 +1,7 @@
 using System.Windows.Automation;
 using DockManager.Core.Diagnostics;
 using DockManager.Core.Integrations;
+using DockManager.Core.Shell;
 using DockManager.Core.Windows;
 
 namespace DockManager.App.Integrations;
@@ -74,6 +75,26 @@ public abstract class ChromiumIntegration : IApplicationIntegration
             _logger?.Warn($"{Id} could not activate '{item.Title}'.", ex);
             return _activator.ActivateWindow(item.WindowHandle);
         }
+    }
+
+    public IReadOnlyList<QuickAction> GetQuickActions(RunningApp app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        if (string.IsNullOrWhiteSpace(app.ExecutablePath))
+        {
+            return [];
+        }
+
+        return
+        [
+            new QuickAction(
+                "New tab",
+                new LaunchRequest(app.ExecutablePath, LaunchVerb.Execute)),
+            new QuickAction(
+                "New window",
+                new LaunchRequest(app.ExecutablePath, LaunchVerb.Execute) { Arguments = "--new-window" }),
+        ];
     }
 
     private IReadOnlyList<AppContentItem> ReadContent(RunningApp app, IntegrationOptions options)

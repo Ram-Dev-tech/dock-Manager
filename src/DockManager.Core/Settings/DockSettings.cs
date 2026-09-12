@@ -59,7 +59,7 @@ public sealed class DockSettings
     public bool LaunchAtStartup { get; set; }
 
     /// <summary>How many pixels of the screen edge count as the activation strip.</summary>
-    public int EdgeActivationPixels { get; set; } = 2;
+    public int EdgeActivationPixels => Sensitivity.ActivationPixels();
 
     /// <summary>Opacity of the dock panel background.</summary>
     public double PanelOpacity { get; set; } = 0.96;
@@ -86,6 +86,32 @@ public sealed class DockSettings
 
     /// <summary>Ids of integrations the user switched off (e.g. "chrome", "edge").</summary>
     public List<string> DisabledIntegrations { get; set; } = [];
+
+    // ----- Phase 3: appearance, organization, shortcuts ----------------------------------------
+
+    /// <summary>Colour scheme. Default follows the Windows theme.</summary>
+    public DockTheme Theme { get; set; } = DockTheme.System;
+
+    /// <summary>How eagerly the screen edge reveals the dock.</summary>
+    public EdgeSensitivity Sensitivity { get; set; } = EdgeSensitivity.Normal;
+
+    /// <summary>
+    /// Device name of the monitor the dock lives on (e.g. "\\.\DISPLAY2"). Empty means the primary
+    /// monitor; an unknown name also falls back to the primary.
+    /// </summary>
+    public string MonitorName { get; set; } = string.Empty;
+
+    /// <summary>Master switch for the dock's short animations. Also honours reduced motion.</summary>
+    public bool AnimationsEnabled { get; set; } = true;
+
+    /// <summary>Show the quick filter box once the dock holds enough items for it to help.</summary>
+    public bool SearchEnabled { get; set; } = true;
+
+    /// <summary>Number of openable items from which the search box appears.</summary>
+    public int SearchThreshold { get; set; } = 8;
+
+    /// <summary>Global keyboard shortcuts, one per action.</summary>
+    public List<ShortcutRecord> Shortcuts { get; set; } = ShortcutDefaults.Create();
 
     public DockLayoutMetrics CreateLayoutMetrics() => DockLayoutMetrics.ForIconSize(IconSize);
 
@@ -115,11 +141,60 @@ public sealed class DockSettings
         copy.IconSize = Math.Clamp(copy.IconSize, DockLayoutMetrics.MinIconSize, DockLayoutMetrics.MaxIconSize);
         copy.HideDelayMs = Math.Clamp(copy.HideDelayMs, MinHideDelayMs, MaxHideDelayMs);
         copy.RevealDelayMs = Math.Clamp(copy.RevealDelayMs, 0, 2000);
-        copy.EdgeActivationPixels = Math.Clamp(copy.EdgeActivationPixels, 1, 24);
         copy.PanelOpacity = Math.Clamp(copy.PanelOpacity, 0.35d, 1d);
         copy.CursorPollIntervalMs = Math.Clamp(copy.CursorPollIntervalMs, 15, 250);
         copy.HoverDelayMs = Math.Clamp(copy.HoverDelayMs, 0, 2000);
         copy.DisabledIntegrations = copy.DisabledIntegrations is null ? [] : copy.DisabledIntegrations.ToList();
+
+        if (!Enum.IsDefined(copy.Theme))
+        {
+            copy.Theme = DockTheme.System;
+        }
+
+        if (!Enum.IsDefined(copy.Sensitivity))
+        {
+            copy.Sensitivity = EdgeSensitivity.Normal;
+        }
+
+        copy.MonitorName = copy.MonitorName?.Trim() ?? string.Empty;
+        copy.SearchThreshold = Math.Clamp(copy.SearchThreshold, 3, 100);
+        copy.Shortcuts = SanitizeShortcuts(copy.Shortcuts);
         return copy;
+    }
+
+    /// <summary>
+    /// Copies the shortcut list so drafts never alias the stored records, and clears duplicate
+    /// combinations (the first binding of a combo wins) so two actions can never fight over one key.
+    /// </summary>
+    private static List<ShortcutRecord> SanitizeShortcuts(List<ShortcutRecord>? shortcuts)
+    {
+        var result = new List<ShortcutRecord>();
+        if (shortcuts is null)
+        {
+            return result;
+        }
+
+        var seen = new HashSet<(uint Modifiers, uint Key)>();
+
+        foreach (var record in shortcuts)
+        {
+            if (record is null)
+            {
+                continue;
+            }
+
+            var clone = record.Clone();
+            clone.Modifiers &= ShortcutModifiers.All;
+
+            if (!clone.IsEmpty && !seen.Add((clone.Modifiers, clone.Key)))
+            {
+                clone.Modifiers = 0;
+                clone.Key = 0;
+            }
+
+            result.Add(clone);
+        }
+
+        return result;
     }
 }

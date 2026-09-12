@@ -1,3 +1,4 @@
+using DockManager.Core.Dock;
 using DockManager.Core.Items;
 
 namespace DockManager.Core.Persistence;
@@ -5,13 +6,16 @@ namespace DockManager.Core.Persistence;
 /// <summary>
 /// On disk representation of one pinned item. Only what is needed to reopen the item is stored:
 /// the path (a stable Windows identifier for apps, files and folders) plus the launch details of a
-/// shortcut when one was pinned.
+/// shortcut when one was pinned. Groups and separators store their section instead of a path.
 /// </summary>
 public sealed class ItemDto
 {
     public string? Id { get; set; }
 
     public PinnedItemKind Kind { get; set; }
+
+    /// <summary>Section of organizational entries (separators, group headers); null otherwise.</summary>
+    public DockSection? Section { get; set; }
 
     public string? TargetPath { get; set; }
 
@@ -45,12 +49,25 @@ public sealed class ItemDto
             dto.WorkingDirectory = app.WorkingDirectory;
         }
 
+        if (item.Kind.IsOrganizational())
+        {
+            dto.Section = item.Section;
+        }
+
         return dto;
     }
 
     /// <summary>Rebuilds the item. Returns <c>null</c> for entries this version cannot understand.</summary>
     public PinnedItem? ToItem()
     {
+        if (Kind.IsOrganizational())
+        {
+            var section = Section ?? DockSection.Applications;
+            return Kind == PinnedItemKind.GroupHeader
+                ? new GroupHeaderItem(Id, DisplayName ?? string.Empty, section)
+                : new SeparatorItem(Id, section);
+        }
+
         if (string.IsNullOrWhiteSpace(TargetPath))
         {
             return null;

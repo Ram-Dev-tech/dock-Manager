@@ -15,6 +15,15 @@ public static class VSCodeTitleParser
         " - Code",
     ];
 
+    /// <summary>Titles that carry no information at all: the bare editor name.</summary>
+    private static readonly string[] BareNames =
+    [
+        "Visual Studio Code Insiders",
+        "Visual Studio Code",
+        "Code - Insiders",
+        "Code",
+    ];
+
     public static (string? Document, string? Project) Parse(string? title)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -23,6 +32,14 @@ public static class VSCodeTitleParser
         }
 
         var trimmed = title.Trim();
+
+        foreach (var bare in BareNames)
+        {
+            if (trimmed.Equals(bare, StringComparison.OrdinalIgnoreCase))
+            {
+                return (null, null);
+            }
+        }
 
         foreach (var suffix in Suffixes)
         {
