@@ -14,10 +14,22 @@ DockManager.Core  (net8.0, no Windows deps)
 │   └── DockAnimator                   eased 0..1 interpolation for the slide
 ├── Items
 │   ├── PinnedItem / AppItem / FileItem / FolderItem
-│   ├── ItemStore                      ordered sections, dedupe, reorder, remove-missing
+│   ├── SeparatorItem / GroupHeaderItem   pure layout entries riding the same ordered list
+│   ├── ItemStore                      ordered sections, dedupe, reorder, groups, remove-missing
 │   └── PinnedItemFactory              path -> correct item kind
+├── Integrations
+│   ├── IApplicationIntegration        "what does this app have open, and how do I switch to it"
+│   ├── AppContentItem / QuickAction   the entries the hover panel shows; reliable menu actions
+│   ├── GenericIntegration             window-level fallback: Phase 1 behaviour, always available
+│   ├── ApplicationManager             executable -> integration resolution, user can disable
+│   └── VSCodeTitleParser              pure title parsing (fully unit tested)
+├── Panel
+│   └── TabPanelController             hover panel open/close delays as a clock-driven machine
+├── Shortcuts
+│   ├── ShortcutFormatter              "Ctrl + Shift + Space" formatting, capture rules
+│   └── ShortcutValidator              reserved Windows combos are refused, never taken
 ├── Settings
-│   ├── DockSettings / DockSizeScale   the small Phase 1 settings surface + clamping
+│   ├── DockSettings / DockSizeScale / DockTheme / EdgeSensitivity / ShortcutRecord
 │   ├── SettingsStore                  validate -> save -> broadcast
 │   └── IStartupRegistration
 ├── Persistence
@@ -43,13 +55,21 @@ DockManager.App  (net8.0-windows, WPF + Win32)
 │   ├── WindowActivator                restore + SetForegroundWindow with thread attach
 │   ├── WindowManager                  IWindowManager implementation
 │   └── ForegroundWatcher              SetWinEventHook for the active indicator
+├── Integrations
+│   ├── IntegrationWorker              dedicated STA thread: UIA/COM never block the dock
+│   ├── ChromiumIntegration            Chrome/Edge tabs via UI Automation
+│   ├── VSCodeIntegration              projects/documents from window titles
+│   ├── ExplorerIntegration            open folders via IShellWindows COM
+│   └── WindowPreviewService           one-shot PrintWindow capture per hovered entry
 ├── Shell
 │   ├── ShellLauncher / ShellLinkResolver / IconProvider
 ├── Settings
-│   ├── SettingsWindow                 minimal settings UI
+│   ├── SettingsWindow                 Dock / Appearance / Items / Applications / Shortcuts / General
 │   └── StartupRegistration            HKCU Run key via advapi32
 ├── Ui
 │   ├── TrayIcon                       Shell_NotifyIcon + message window (no WinForms)
+│   ├── TabPanelWindow                 the non-activating hover panel
+│   ├── ThemeService                   System/Light/Dark -> shared DynamicResource brushes
 │   ├── IconConverter / DockLook
 └── Composition
     └── DockServices                   the service bag / composition root
@@ -67,10 +87,19 @@ DockManager.App  (net8.0-windows, WPF + Win32)
   (grouped by executable) and the dock looks up each pinned item against it. Enumeration only happens
   while the dock is visible, so an idle dock costs nothing.
 - **The active indicator is event driven** (`SetWinEventHook`), not polled.
+- **Integrations are opt-in per app and fail soft.** Every integration answers the same contract and
+  must return its best fallback (the window list) instead of throwing; unknown or disabled apps get
+  the generic integration, so Phase 1 behaviour is the floor, never the casualty. Heavy work (UIA,
+  shell COM) runs on one STA thread and only while the hover panel is open — an idle dock never
+  enumerates anything.
+- **Groups are layout, not a new data structure.** A group is a header item in the same ordered
+  list as everything else; reordering, drag & drop and persistence needed no special casing.
+- **Shortcuts never hijack Windows.** Reserved combinations are rejected before registration,
+  registration failures are reported, and bindings are stored in settings, not in code.
 
-## Phase 2 boundary
+## Out of scope
 
-Deliberately out of scope here (the seams above are where they would plug in):
+Deliberately not built (the seams above are where they would plug in):
 
-- Browser / editor tab extraction (a per-app plugin would extend `WindowEnumerator` + `RunningApp`).
-- Per-window previews, workspace management, themes marketplace, cloud sync, accounts, AI features.
+- A plugin marketplace, cloud sync, accounts, AI features.
+- A full window manager or a Windows Search replacement: the dock filter only narrows its own items.

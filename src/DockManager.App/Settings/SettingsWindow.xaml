@@ -50,7 +50,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="22,18">
 
-            <!-- DOCK ----------------------------------------------------------------------- -->
+            <!-- DOCK -->
             <StackPanel Style="{StaticResource SectionBox}">
                 <TextBlock Style="{StaticResource SectionHeader}" Text="DOCK" />
 
@@ -109,7 +109,7 @@
                 <Slider x:Name="HideDelaySlider" Minimum="0" Maximum="2000" SmallChange="50" LargeChange="100" ValueChanged="OnHideDelayChanged" />
             </StackPanel>
 
-            <!-- APPEARANCE ------------------------------------------------------------------ -->
+            <!-- APPEARANCE -->
             <StackPanel Style="{StaticResource SectionBox}">
                 <TextBlock Style="{StaticResource SectionHeader}" Text="APPEARANCE" />
 
@@ -144,7 +144,7 @@
                           Unchecked="OnAnimationsChanged" />
             </StackPanel>
 
-            <!-- ITEMS ------------------------------------------------------------------------ -->
+            <!-- ITEMS -->
             <StackPanel Style="{StaticResource SectionBox}">
                 <TextBlock Style="{StaticResource SectionHeader}" Text="ITEMS" />
                 <CheckBox x:Name="SearchBoxSetting"
@@ -154,7 +154,7 @@
                           Unchecked="OnSearchChanged" />
             </StackPanel>
 
-            <!-- APPLICATIONS ------------------------------------------------------------------ -->
+            <!-- APPLICATIONS -->
             <StackPanel Style="{StaticResource SectionBox}">
                 <TextBlock Style="{StaticResource SectionHeader}" Text="APPLICATIONS" />
                 <CheckBox x:Name="HoverPanelBox"
@@ -180,7 +180,7 @@
                 <StackPanel x:Name="IntegrationListHost" />
             </StackPanel>
 
-            <!-- SHORTCUTS ---------------------------------------------------------------------- -->
+            <!-- SHORTCUTS -->
             <StackPanel Style="{StaticResource SectionBox}">
                 <TextBlock Style="{StaticResource SectionHeader}" Text="SHORTCUTS" />
                 <TextBlock FontSize="11"
@@ -256,7 +256,7 @@
                            Visibility="Collapsed" />
             </StackPanel>
 
-            <!-- GENERAL ------------------------------------------------------------------------ -->
+            <!-- GENERAL -->
             <StackPanel Style="{StaticResource SectionBox}">
                 <TextBlock Style="{StaticResource SectionHeader}" Text="GENERAL" />
                 <CheckBox x:Name="StartupBox"
