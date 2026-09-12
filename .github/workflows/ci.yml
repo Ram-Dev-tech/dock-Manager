@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core:
+    name: Core unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: |
+          set +e
+          dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj \
+            --configuration Release \
+            --logger "console;verbosity=normal" 2>&1 | tee test-output.txt
+          exit "${PIPESTATUS[0]}"
+
+      # Build/test failures are re-emitted as workflow annotations so they are readable through the
+      # GitHub API without downloading the raw log archive.
+      - name: Surface failures
+        if: always()
+        run: |
+          if [ -f test-output.txt ]; then
+            { grep -E "(error [A-Z]+[0-9]+|warning [A-Z]+[0-9]+|\[FAIL\])" test-output.txt || true; \
+              grep -A2 -E "Error Message:" test-output.txt | grep -vE '^--$' || true; } \
+              | sed -e 's/%/%25/g' -e 's/\r//g' \
+              | head -n 120 \
+              | while IFS= read -r line; do echo "::error::${line}"; done || true
+          fi
+          exit 0
+
+      - name: Fail when tests failed
+        if: always() && steps.test.outcome == 'failure'
+        run: |
+          echo "Core tests failed."
+          exit 1
+
+  windows:
+    name: Build app (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore DockManager.sln
+
+      - name: Build
+        id: build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          dotnet build DockManager.sln --configuration Release --no-restore 2>&1 | tee build-output.txt
+          exit "${PIPESTATUS[0]}"
+
+      - name: Surface failures
+        if: always()
+        shell: bash
+        run: |
+          if [ -f build-output.txt ]; then
+            grep -E "(error [A-Z]+[0-9]+|warning [A-Z]+[0-9]+)" build-output.txt \
+              | sed -e 's/%/%25/g' -e 's/\r//g' \
+              | sort -u \
+              | head -n 100 \
+              | while IFS= read -r line; do echo "::error::${line}"; done || true
+          fi
+          exit 0
+
+      - name: Fail when build failed
+        if: always() && steps.build.outcome == 'failure'
+        run: |
+          echo "Build failed."
+          exit 1
