@@ -3,11 +3,13 @@ using System.Windows.Threading;
 using DockManager.App.Composition;
 using DockManager.App.Diagnostics;
 using DockManager.App.Dock;
+using DockManager.App.Integrations;
 using DockManager.App.Settings;
 using DockManager.App.Shell;
 using DockManager.App.Ui;
 using DockManager.App.Windows;
 using DockManager.Core.Diagnostics;
+using DockManager.Core.Integrations;
 using DockManager.Core.Items;
 using DockManager.Core.Persistence;
 using DockManager.Core.Settings;
@@ -24,6 +26,7 @@ namespace DockManager.App;
 public partial class App : Application
 {
     private DockServices? _services;
+    private IntegrationWorker? _integrationWorker;
     private DockWindow? _dock;
     private SettingsWindow? _settingsWindow;
 
@@ -84,6 +87,15 @@ public partial class App : Application
         items.Changed += (_, _) => itemRepository.Save(items.Items);
 
         var windows = new WindowManager(logger);
+        var activator = new WindowActivator(logger);
+        var integrationWorker = new IntegrationWorker();
+        _integrationWorker = integrationWorker;
+        var applications = new ApplicationManager(new GenericIntegration());
+        applications.Register(new ChromeIntegration(integrationWorker, activator, logger));
+        applications.Register(new EdgeIntegration(integrationWorker, activator, logger));
+        applications.Register(new VSCodeIntegration(integrationWorker, activator, logger));
+        applications.Register(new ExplorerIntegration(integrationWorker, activator, logger));
+        var previews = new WindowPreviewService(logger);
         var startup = new StartupRegistration(logger: logger);
         var viewModel = new DockViewModel(items, fileSystem, settings.Current.CreateLayoutMetrics());
 
@@ -110,6 +122,8 @@ public partial class App : Application
             Startup = startup,
             ViewModel = viewModel,
             Tray = tray,
+            Applications = applications,
+            Previews = previews,
         };
 
         tray.Install();
@@ -138,7 +152,7 @@ public partial class App : Application
     {
         if (_settingsWindow is null)
         {
-            _settingsWindow = new SettingsWindow(_services!.Settings, _services.Startup);
+            _settingsWindow = new SettingsWindow(_services!.Settings, _services.Startup, _services.Applications.Registered);
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         }
 
@@ -149,6 +163,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _services?.Tray.Dispose();
+        _integrationWorker?.Dispose();
         if (_services is not null)
         {
             _services.Settings.Save();

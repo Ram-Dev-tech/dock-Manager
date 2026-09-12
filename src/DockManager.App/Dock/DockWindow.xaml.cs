@@ -9,7 +9,9 @@ using DockManager.App.Ui;
 using DockManager.App.Windows;
 using DockManager.Core.Diagnostics;
 using DockManager.Core.Dock;
+using DockManager.Core.Integrations;
 using DockManager.Core.Items;
+using DockManager.Core.Panel;
 using DockManager.Core.Settings;
 using DockManager.Core.Shell;
 using DockManager.Core.Ui;
@@ -35,6 +37,14 @@ public sealed partial class DockWindow : Window
     private readonly DispatcherTimer _cursorTimer;
     private readonly DispatcherTimer _runningTimer;
     private readonly ForegroundWatcher _foregroundWatcher;
+    private readonly TabPanelController _panelController;
+    private readonly DispatcherTimer _panelRefreshTimer;
+
+    private TabPanelWindow? _tabPanel;
+    private DockItemViewModel? _hoveredApp;
+    private bool _overDockItem;
+    private CancellationTokenSource? _contentLoadCts;
+    private CancellationTokenSource? _previewCts;
 
     private IntPtr _hwnd;
     private MonitorGeometry _monitor = MonitorGeometry.Unknown;
@@ -57,6 +67,15 @@ public sealed partial class DockWindow : Window
 
         _visibility = new DockVisibilityController(services.Settings.Current.CreateVisibilityOptions());
         _visibility.StateChanged += OnVisibilityStateChanged;
+
+        _panelController = new TabPanelController(services.Settings.Current.HoverDelayMs, 250);
+        _panelController.StateChanged += OnPanelStateChanged;
+
+        _panelRefreshTimer = new DispatcherTimer(DispatcherPriority.Background)
+        {
+            Interval = TimeSpan.FromSeconds(2),
+        };
+        _panelRefreshTimer.Tick += (_, _) => RefreshPanelContent();
 
         _animator.Frame += progress => ApplyPlacement(progress);
 
@@ -162,9 +181,18 @@ public sealed partial class DockWindow : Window
             return;
         }
 
-        var inside = IsInsideDock(cursor);
+        var overPanel = _tabPanel is not null
+            && _panelController.State == TabPanelState.Open
+            && _tabPanel.ContainsPoint(cursor);
+
+        var inside = IsInsideDock(cursor) || overPanel;
         var atEdge = !inside && IsCursorAtEdge(cursor);
         _visibility.Update(inside, atEdge, NowMs());
+
+        _panelController.Update(
+            _services.Settings.Current.ShowAppItemsOnHover && _overDockItem && _hoveredApp is not null,
+            overPanel,
+            NowMs());
     }
 
     private void OnRunningTick(object? sender, EventArgs e)
@@ -203,6 +231,7 @@ public sealed partial class DockWindow : Window
                 break;
 
             case DockVisibilityState.Hiding:
+                _panelController.Hide(NowMs());
                 StartAnimation(0d, _visibility.Options.HideDurationMs);
                 break;
 
@@ -331,6 +360,12 @@ public sealed partial class DockWindow : Window
         ApplyLook(e.Settings);
         _visibility.ApplyOptions(e.Settings.CreateVisibilityOptions());
         _cursorTimer.Interval = TimeSpan.FromMilliseconds(e.Settings.CursorPollIntervalMs);
+        _panelController.ApplyDelays(e.Settings.HoverDelayMs, _panelController.CloseDelayMs);
+        if (!e.Settings.ShowAppItemsOnHover)
+        {
+            _panelController.Hide(NowMs());
+        }
+
         RefreshMonitorGeometry();
     }
 
@@ -364,6 +399,282 @@ public sealed partial class DockWindow : Window
         if (Win32.GetCursorPos(out var cursor))
         {
             _visibility.Update(false, IsCursorAtEdge(cursor), NowMs());
+        }
+    }
+
+    private void OnItemMouseEnter(object sender, MouseEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: DockItemViewModel viewModel }
+            || viewModel.Kind != PinnedItemKind.Application)
+        {
+            return;
+        }
+
+        _overDockItem = true;
+
+        if (!ReferenceEquals(_hoveredApp, viewModel))
+        {
+            _hoveredApp = viewModel;
+
+            if (_panelController.State == TabPanelState.Open)
+            {
+                // Moving between app items swaps the panel content immediately.
+                ShowPanelForHoveredApp();
+            }
+        }
+    }
+
+    private void OnItemMouseLeave(object sender, MouseEventArgs e) => _overDockItem = false;
+
+    // ----- secondary hover panel ---------------------------------------------------------------
+
+    private void OnPanelStateChanged(object? sender, TabPanelStateChangedEventArgs e)
+    {
+        if (e.Current == TabPanelState.Open)
+        {
+            ShowPanelForHoveredApp();
+            return;
+        }
+
+        _contentLoadCts?.Cancel();
+        _previewCts?.Cancel();
+        _panelRefreshTimer.Stop();
+        _tabPanel?.MoveOffScreen();
+    }
+
+    private void ShowPanelForHoveredApp()
+    {
+        var settings = _services.Settings.Current;
+        if (!settings.ShowAppItemsOnHover || _hoveredApp?.Item is not AppItem app)
+        {
+            _panelController.Hide(NowMs());
+            return;
+        }
+
+        var running = _running.FindByExecutable(app.RunningMatchKey);
+        if (running is null)
+        {
+            // The panel only has something to show for running applications.
+            _panelController.Hide(NowMs());
+            return;
+        }
+
+        EnsureTabPanel();
+        if (_tabPanel is null)
+        {
+            return;
+        }
+
+        _tabPanel.EnsureShown();
+        _tabPanel.SetPreview(null);
+        _tabPanel.SetApplication(app.EffectiveName, app.TargetPath);
+        _tabPanel.SetLoading(true);
+        _tabPanel.SetItems([]);
+        PositionPanel();
+
+        RefreshPanelContent();
+    }
+
+    private void EnsureTabPanel()
+    {
+        if (_tabPanel is not null)
+        {
+            return;
+        }
+
+        var panel = new TabPanelWindow();
+        panel.ItemActivated += OnTabPanelItemActivated;
+        panel.ItemHovered += OnTabPanelItemHovered;
+        panel.ItemHoverCleared += (_, _) => _tabPanel?.SetPreview(null);
+        _tabPanel = panel;
+    }
+
+    private void RefreshPanelContent()
+    {
+        if (_tabPanel is null || _hoveredApp?.Item is not AppItem app)
+        {
+            return;
+        }
+
+        var running = _running.FindByExecutable(app.RunningMatchKey);
+        if (running is null)
+        {
+            RefreshRunningApps();
+            running = _running.FindByExecutable(app.RunningMatchKey);
+        }
+
+        if (running is null)
+        {
+            _panelController.Hide(NowMs());
+            return;
+        }
+
+        var settings = _services.Settings.Current;
+        var integration = _services.Applications.Resolve(running, _services.DisabledIntegrationSet());
+        var options = new IntegrationOptions(
+            settings.GroupMultipleWindows,
+            settings.ShowWindowPreviews,
+            _services.Windows.GetForegroundWindowHandle());
+
+        _contentLoadCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _contentLoadCts = cts;
+
+        _ = LoadPanelContentAsync(integration, running, options, cts.Token);
+    }
+
+    private async Task LoadPanelContentAsync(
+        IApplicationIntegration integration,
+        RunningApp running,
+        IntegrationOptions options,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var items = await integration.GetContentAsync(running, options, cancellationToken);
+            if (cancellationToken.IsCancellationRequested || _tabPanel is null)
+            {
+                return;
+            }
+
+            if (_panelController.State != TabPanelState.Open)
+            {
+                return;
+            }
+
+            if (items.Count <= 1 && !integration.SupportsItemLevelNavigation)
+            {
+                // One plain window adds nothing over the dock click itself; stay quiet.
+                _panelController.Hide(NowMs());
+                return;
+            }
+
+            _tabPanel.SetItems(items);
+            _tabPanel.SetLoading(false);
+            PositionPanel();
+            _panelRefreshTimer.Start();
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load.
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.Warn($"Could not read {integration.DisplayName} content.", ex);
+            _tabPanel?.SetLoading(false);
+        }
+    }
+
+    /// <summary>
+    /// Places the panel beside the dock, next to the hovered item, kept fully inside the work area
+    /// so it never covers the dock or reaches the wrong monitor.
+    /// </summary>
+    private void PositionPanel()
+    {
+        if (_tabPanel is null || _hwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _tabPanel.UpdateLayout();
+        if (!_tabPanel.TryGetPhysicalRect(out var panelRect))
+        {
+            return;
+        }
+
+        var panelWidth = panelRect.Right - panelRect.Left;
+        var panelHeight = panelRect.Bottom - panelRect.Top;
+        if (panelWidth <= 0 || panelHeight <= 0)
+        {
+            return;
+        }
+
+        const int gap = 10;
+        var settings = _services.Settings.Current;
+        var x = settings.Edge == DockEdge.Left
+            ? _windowRect.Right + gap
+            : _windowRect.Left - gap - panelWidth;
+
+        var y = _windowRect.Top;
+        if (_hoveredApp is not null && FindItemContainer(_hoveredApp) is { } container)
+        {
+            var relative = container.TranslatePoint(new Point(0, 0), this);
+            y = _windowRect.Top + (int)Math.Round(relative.Y * _monitor.DpiScale);
+        }
+
+        var workArea = _monitor.WorkArea;
+        var maxY = workArea.Bottom - panelHeight - 8;
+        y = Math.Clamp(y, workArea.Top + 8, Math.Max(workArea.Top + 8, maxY));
+
+        _tabPanel.ApplyPhysicalPlacement(x, y);
+    }
+
+    private FrameworkElement? FindItemContainer(DockItemViewModel viewModel)
+    {
+        var list = viewModel.Kind == PinnedItemKind.Application ? ApplicationsList : FilesList;
+        var index = list.Items.IndexOf(viewModel);
+        return index >= 0 ? list.ItemContainerGenerator.ContainerFromIndex(index) as FrameworkElement : null;
+    }
+
+    private async void OnTabPanelItemActivated(object? sender, AppContentItem item)
+    {
+        if (_hoveredApp?.Item is not AppItem app)
+        {
+            return;
+        }
+
+        var running = _running.FindByExecutable(app.RunningMatchKey);
+        if (running is null)
+        {
+            ActivateItem(_hoveredApp);
+            return;
+        }
+
+        var integration = _services.Applications.Resolve(running, _services.DisabledIntegrationSet());
+
+        try
+        {
+            var activated = await integration.ActivateItemAsync(item, CancellationToken.None);
+            if (!activated)
+            {
+                _services.Windows.Activate(running);
+            }
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.Warn($"Could not switch to \"{item.Title}\".", ex);
+            _services.Windows.Activate(running);
+        }
+
+        _panelController.Hide(NowMs());
+    }
+
+    private async void OnTabPanelItemHovered(object? sender, AppContentItem item)
+    {
+        if (!_services.Settings.Current.ShowWindowPreviews || item.WindowHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        _previewCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _previewCts = cts;
+
+        try
+        {
+            var preview = await _services.Previews.CaptureAsync(item.WindowHandle, cts.Token);
+            if (!cts.IsCancellationRequested && _tabPanel is not null && _panelController.State == TabPanelState.Open)
+            {
+                _tabPanel.SetPreview(preview);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer hover superseded this preview.
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.Warn("Window preview capture failed.", ex);
         }
     }
 
@@ -827,7 +1138,12 @@ public sealed partial class DockWindow : Window
         base.OnClosed(e);
         _cursorTimer.Stop();
         _runningTimer.Stop();
+        _panelRefreshTimer.Stop();
+        _contentLoadCts?.Cancel();
+        _previewCts?.Cancel();
         _foregroundWatcher.Dispose();
         UnsubscribeRendering();
+        _tabPanel?.Close();
+        _tabPanel = null;
     }
 }

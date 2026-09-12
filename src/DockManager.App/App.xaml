@@ -3,5 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
+        <!--
+            Shared palette. Windows may override individual keys with local resources; the hover
+            panel and the settings window pick these up through DynamicResource.
+        -->
+        <SolidColorBrush x:Key="PanelBackground" Color="#E61C1C21" />
+        <SolidColorBrush x:Key="PanelBorder" Color="#2EFFFFFF" />
+        <SolidColorBrush x:Key="TextPrimary" Color="#F2F5F7" />
+        <SolidColorBrush x:Key="TextSecondary" Color="#9AA0AA" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#FF6EC1FF" />
     </Application.Resources>
 </Application>

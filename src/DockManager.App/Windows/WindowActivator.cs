@@ -1,5 +1,7 @@
 using DockManager.Core.Diagnostics;
 
+using DockManager.Core.Integrations;
+
 namespace DockManager.App.Windows;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace DockManager.App.Windows;
 /// do not already own the foreground, so the input threads are attached for the duration of the
 /// call, which is the standard way to make the switch reliable without stealing focus elsewhere.
 /// </summary>
-public sealed class WindowActivator
+public sealed class WindowActivator : IWindowActivator
 {
     private static readonly IntPtr HwndTop = IntPtr.Zero;
 
@@ -74,4 +76,6 @@ public sealed class WindowActivator
             return false;
         }
     }
+
+    bool IWindowActivator.ActivateWindow(IntPtr handle) => Activate(handle);
 }

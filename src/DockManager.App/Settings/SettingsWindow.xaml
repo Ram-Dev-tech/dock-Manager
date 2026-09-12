@@ -62,6 +62,33 @@
         </StackPanel>
 
         <StackPanel Style="{StaticResource SectionBox}">
+            <TextBlock Style="{StaticResource SectionHeader}" Text="APPLICATIONS" />
+            <CheckBox x:Name="HoverPanelBox"
+                      Content="Show what an app has open when hovering it"
+                      Foreground="#FFEEEEEE"
+                      Margin="0,0,0,8"
+                      Checked="OnHoverPanelChanged"
+                      Unchecked="OnHoverPanelChanged" />
+            <CheckBox x:Name="PreviewBox"
+                      Content="Show a small window preview in the hover panel"
+                      Foreground="#FFEEEEEE"
+                      Margin="0,0,0,10"
+                      Checked="OnPreviewChanged"
+                      Unchecked="OnPreviewChanged" />
+            <TextBlock Text="Hover panel appears after" FontSize="12" Margin="0,0,0,4" />
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="54" />
+                </Grid.ColumnDefinitions>
+                <Slider x:Name="HoverDelaySlider" Minimum="0" Maximum="1000" SmallChange="20" LargeChange="50" ValueChanged="OnHoverDelayChanged" />
+                <TextBlock x:Name="HoverDelayValue" Grid.Column="1" TextAlignment="Right" VerticalAlignment="Center" FontSize="12" />
+            </Grid>
+            <TextBlock Text="App support" FontSize="12" Margin="0,0,0,4" />
+            <StackPanel x:Name="IntegrationListHost" />
+        </StackPanel>
+
+        <StackPanel Style="{StaticResource SectionBox}">
             <TextBlock Style="{StaticResource SectionHeader}" Text="STARTUP" />
             <CheckBox x:Name="StartupBox" Content="Launch Dock Manager when Windows starts" Foreground="#FFEEEEEE" Checked="OnStartupChanged" Unchecked="OnStartupChanged" />
         </StackPanel>

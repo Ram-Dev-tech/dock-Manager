@@ -72,6 +72,8 @@
                   MouseLeftButtonUp="OnItemMouseLeftButtonUp"
                   MouseMove="OnItemMouseMove"
                   MouseRightButtonUp="OnItemMouseRightButtonUp"
+                  MouseEnter="OnItemMouseEnter"
+                  MouseLeave="OnItemMouseLeave"
                   DragOver="OnItemDragOver"
                   Drop="OnItemDrop">
                 <Border x:Name="Highlight"

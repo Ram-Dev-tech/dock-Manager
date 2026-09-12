@@ -1,3 +1,5 @@
+using DockManager.Core.Integrations;
+
 namespace DockManager.Core.Tests;
 
 public class VSCodeTitleParserTests

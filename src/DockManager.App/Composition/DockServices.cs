@@ -1,3 +1,4 @@
+using DockManager.App.Integrations;
 using DockManager.App.Ui;
 using DockManager.Core.Diagnostics;
 using DockManager.Core.Settings;
@@ -5,6 +6,7 @@ using DockManager.Core.Shell;
 using DockManager.Core.Ui;
 using DockManager.Core.Windows;
 using DockManager.Core.Items;
+using DockManager.Core.Integrations;
 
 namespace DockManager.App.Composition;
 
@@ -36,4 +38,15 @@ public sealed class DockServices
     public required DockViewModel ViewModel { get; init; }
 
     public required TrayIcon Tray { get; init; }
+
+    public required ApplicationManager Applications { get; init; }
+
+    public required WindowPreviewService Previews { get; init; }
+
+    /// <summary>
+    /// Resolves the integrations the user switched off in settings. Recomputed per call: the set is
+    /// tiny and this avoids stale caches after settings changes.
+    /// </summary>
+    public IReadOnlySet<string> DisabledIntegrationSet()
+        => new HashSet<string>(Settings.Current.DisabledIntegrations, StringComparer.Ordinal);
 }
