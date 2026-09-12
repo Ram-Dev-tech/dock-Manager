@@ -12,5 +12,7 @@
         <SolidColorBrush x:Key="TextPrimary" Color="#F2F5F7" />
         <SolidColorBrush x:Key="TextSecondary" Color="#9AA0AA" />
         <SolidColorBrush x:Key="AccentBrush" Color="#FF6EC1FF" />
+        <SolidColorBrush x:Key="ItemHover" Color="#24FFFFFF" />
+        <SolidColorBrush x:Key="ItemActive" Color="#26FFFFFF" />
     </Application.Resources>
 </Application>

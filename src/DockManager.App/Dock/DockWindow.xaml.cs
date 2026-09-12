@@ -45,6 +45,8 @@ public sealed partial class DockWindow : Window
     private bool _overDockItem;
     private CancellationTokenSource? _contentLoadCts;
     private CancellationTokenSource? _previewCts;
+    private HotkeyService? _hotkeys;
+    private DockItemViewModel? _selected;
 
     private IntPtr _hwnd;
     private MonitorGeometry _monitor = MonitorGeometry.Unknown;
@@ -138,16 +140,35 @@ public sealed partial class DockWindow : Window
             // Older Windows: the window already has rounded corners from the WPF border.
         }
 
-        _monitor = _monitors.GetFor(_hwnd);
+        _monitor = _monitors.GetFor(_hwnd, _services.Settings.Current.MonitorName);
+
+        _hotkeys = new HotkeyService(_hwnd);
+        _hotkeys.Pressed += OnHotkeyPressed;
+        _hotkeys.Apply(_services.Settings.Current.Shortcuts);
+
         ApplyPlacement(0d);
     }
+
+    /// <summary>Shortcuts that Windows refused or another application already holds.</summary>
+    public IReadOnlyList<ShortcutRecord> HotkeyConflicts => _hotkeys?.Conflicts ?? [];
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         var message = (uint)msg;
         if (message is Win32.WmDisplayChange or Win32.WmDpiChanged or Win32.WmSettingChange)
         {
-            Dispatcher.BeginInvoke(new Action(RefreshMonitorGeometry));
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                RefreshMonitorGeometry();
+
+                // The Windows theme may have changed; re-resolve System.
+                ApplyLook(_services.Settings.Current);
+            }));
+        }
+
+        if (_hotkeys is not null && _hotkeys.HandleMessage(message, wParam))
+        {
+            handled = true;
         }
 
         return IntPtr.Zero;
@@ -160,14 +181,17 @@ public sealed partial class DockWindow : Window
             return;
         }
 
-        _monitor = _monitors.GetFor(_hwnd);
+        _monitor = _monitors.GetFor(_hwnd, _services.Settings.Current.MonitorName);
+        UpdateOverflowClamp();
         ApplyPlacement(_animator.Progress);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        _monitor = _monitors.GetFor(_hwnd);
+        _monitor = _monitors.GetFor(_hwnd, _services.Settings.Current.MonitorName);
         UpdateSeparatorVisibility();
+        UpdateSearchVisibility();
+        UpdateOverflowClamp();
         ApplyPlacement(0d);
 
         _cursorTimer.Start();
@@ -243,6 +267,13 @@ public sealed partial class DockWindow : Window
 
     private void StartAnimation(double to, int durationMs)
     {
+        var settings = _services.Settings.Current;
+        if (!settings.AnimationsEnabled || !SystemParameters.ClientAreaAnimation)
+        {
+            // Reduced motion or animations off: snap instead of sliding.
+            durationMs = 0;
+        }
+
         SubscribeRendering();
         _animator.Start(_animator.Progress, to, durationMs, NowMs());
     }
@@ -342,17 +373,11 @@ public sealed partial class DockWindow : Window
         Resources["PanelCornerRadius"] = new CornerRadius(_look.PanelCornerRadius);
         Resources["GlyphFontSize"] = _look.GlyphFontSize;
         Resources["RunningIndicatorSize"] = _look.RunningIndicatorSize;
-        Resources["PanelBackground"] = CreatePanelBrush(_look.PanelOpacity);
+
+        // Theme brushes live at application level so the dock and the hover panel swap together.
+        ThemeService.Apply(ThemeService.Resolve(settings.Theme), _look.PanelOpacity);
 
         ToolTipService.SetIsEnabled(Panel, settings.ShowTooltips);
-    }
-
-    private static Brush CreatePanelBrush(double opacity)
-    {
-        var alpha = (byte)Math.Clamp((int)Math.Round(opacity * 255), 89, 255);
-        var brush = new SolidColorBrush(Color.FromArgb(alpha, 0x1C, 0x1C, 0x21));
-        brush.Freeze();
-        return brush;
     }
 
     private void OnSettingsChanged(object? sender, SettingsChangedEventArgs e)
@@ -366,22 +391,184 @@ public sealed partial class DockWindow : Window
             _panelController.Hide(NowMs());
         }
 
+        _hotkeys?.Apply(e.Settings.Shortcuts);
+        UpdateSearchVisibility();
+        UpdateOverflowClamp();
         RefreshMonitorGeometry();
     }
 
     private void OnContentChanged(object? sender, EventArgs e)
     {
         UpdateSeparatorVisibility();
+        UpdateSearchVisibility();
+        UpdateOverflowClamp();
         Dispatcher.BeginInvoke(new Action(() => ApplyPlacement(_animator.Progress)), DispatcherPriority.Loaded);
     }
 
     private void UpdateSeparatorVisibility()
     {
-        var applications = _services.ViewModel.Applications.Count;
-        var files = _services.ViewModel.Files.Count;
+        // Groups and separators do not count as content for the section dividers.
+        var applications = _services.ViewModel.Applications.Count(viewModel => viewModel.Kind.IsOpenable());
+        var files = _services.ViewModel.Files.Count(viewModel => viewModel.Kind.IsOpenable());
 
         ApplicationsSeparator.Visibility = applications > 0 && files > 0 ? Visibility.Visible : Visibility.Collapsed;
         FilesSeparator.Visibility = applications > 0 || files > 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Keeps the dock inside the work area: the item area scrolls when there are more pins than the
+    /// screen can show, so the dock and its footer buttons always stay reachable.
+    /// </summary>
+    private void UpdateOverflowClamp()
+    {
+        if (_hwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var workAreaDips = _monitor.WorkAreaInDips.Height;
+        var reserved = (_look.DockPadding * 2)
+            + (2 * _look.ItemSize)                       // footer buttons
+            + (2 * (_look.SectionGap * 2 + _look.SeparatorThickness)) // section dividers
+            + 24;                                        // breathing room
+
+        if (SearchHost.Visibility == Visibility.Visible)
+        {
+            reserved += 32;
+        }
+
+        ItemsScroll.MaxHeight = Math.Max(80, workAreaDips - reserved);
+    }
+
+    // ----- search -------------------------------------------------------------------------------
+
+    private void UpdateSearchVisibility()
+    {
+        var settings = _services.Settings.Current;
+        var openable = _services.ViewModel.Applications.Count(viewModel => viewModel.Kind.IsOpenable())
+            + _services.ViewModel.Files.Count(viewModel => viewModel.Kind.IsOpenable());
+
+        var visible = settings.SearchEnabled && openable >= settings.SearchThreshold;
+        SearchHost.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+        if (!visible && SearchBox.Text.Length > 0)
+        {
+            SearchBox.Text = string.Empty;
+        }
+    }
+
+    private void OnSearchTextChanged(object sender, TextChangedEventArgs e) => ApplySearchFilter();
+
+    private void OnSearchPreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        // The dock window never activates, so focus has to be moved by hand.
+        SearchBox.Focus();
+    }
+
+    private void ApplySearchFilter()
+    {
+        var query = SearchBox.Text;
+
+        foreach (var source in new object[] { _services.ViewModel.Applications, _services.ViewModel.Files })
+        {
+            var view = System.Windows.Data.CollectionViewSource.GetDefaultView(source);
+            view.Filter = item => item is DockItemViewModel viewModel && FilterMatches(viewModel, query);
+            view.Refresh();
+        }
+    }
+
+    private static bool FilterMatches(DockItemViewModel viewModel, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        // While filtering, groups and separators would only add noise.
+        return ItemSearchFilter.Matches(viewModel.Item, query);
+    }
+
+    // ----- keyboard selection ---------------------------------------------------------------------
+
+    private void OnHotkeyPressed(DockShortcutAction action)
+    {
+        switch (action)
+        {
+            case DockShortcutAction.OpenDock:
+                if (_visibility.State == DockVisibilityState.Hidden)
+                {
+                    Reveal();
+                }
+                else if (_selected is not null)
+                {
+                    ActivateItem(_selected);
+                }
+                else
+                {
+                    Reveal();
+                }
+
+                break;
+
+            case DockShortcutAction.NextItem:
+                Reveal();
+                MoveSelection(+1);
+                break;
+
+            case DockShortcutAction.PreviousItem:
+                Reveal();
+                MoveSelection(-1);
+                break;
+        }
+    }
+
+    private void MoveSelection(int delta)
+    {
+        var candidates = VisibleOpenableItems();
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var index = _selected is null ? -1 : candidates.IndexOf(_selected);
+        if (index < 0)
+        {
+            index = delta > 0 ? -1 : 0;
+        }
+
+        index = ((index + delta) % candidates.Count + candidates.Count) % candidates.Count;
+        SelectItem(candidates[index]);
+    }
+
+    private void SelectItem(DockItemViewModel? viewModel)
+    {
+        if (_selected is not null)
+        {
+            _selected.IsSelected = false;
+        }
+
+        _selected = viewModel;
+
+        if (_selected is not null)
+        {
+            _selected.IsSelected = true;
+        }
+    }
+
+    /// <summary>All openable items currently shown (search filter applied), in dock order.</summary>
+    private List<DockItemViewModel> VisibleOpenableItems()
+    {
+        var result = new List<DockItemViewModel>();
+
+        foreach (var viewModel in _services.ViewModel.Applications.Concat(_services.ViewModel.Files))
+        {
+            if (viewModel.Kind.IsOpenable() && FilterMatches(viewModel, SearchBox.Text))
+            {
+                result.Add(viewModel);
+            }
+        }
+
+        return result;
     }
 
     private void RefreshRunningApps()
@@ -765,9 +952,55 @@ public sealed partial class DockWindow : Window
     {
         var menu = new ContextMenu();
 
+        if (viewModel.Item is GroupHeaderItem)
+        {
+            var rename = new MenuItem { Header = "Rename group…" };
+            rename.Click += (_, _) => RenameGroup(viewModel);
+            menu.Items.Add(rename);
+
+            var removeGroup = new MenuItem { Header = "Remove group (items stay on the dock)" };
+            removeGroup.Click += (_, _) => _services.Items.Remove(viewModel.Id);
+            menu.Items.Add(removeGroup);
+        }
+        else if (viewModel.Item is SeparatorItem)
+        {
+            var removeSeparator = new MenuItem { Header = "Remove separator" };
+            removeSeparator.Click += (_, _) => _services.Items.Remove(viewModel.Id);
+            menu.Items.Add(removeSeparator);
+        }
+        else
+        {
+            BuildOpenableItemMenu(menu, viewModel);
+        }
+
+        menu.PlacementTarget = target;
+        menu.IsOpen = true;
+    }
+
+    private void BuildOpenableItemMenu(ContextMenu menu, DockItemViewModel viewModel)
+    {
+        var id = viewModel.Id;
+
         var open = new MenuItem { Header = OpenLabelFor(viewModel) };
         open.Click += (_, _) => ActivateItem(viewModel);
         menu.Items.Add(open);
+
+        // Quick actions the integration can run reliably for the running application.
+        if (viewModel.Item is AppItem app)
+        {
+            var running = _running.FindByExecutable(app.RunningMatchKey);
+            if (running is not null)
+            {
+                var integration = _services.Applications.Resolve(running, _services.DisabledIntegrationSet());
+                foreach (var action in integration.GetQuickActions(running))
+                {
+                    var quick = new MenuItem { Header = action.Label };
+                    var request = action.Request;
+                    quick.Click += (_, _) => LaunchQuickAction(request);
+                    menu.Items.Add(quick);
+                }
+            }
+        }
 
         if (viewModel.Kind == PinnedItemKind.File)
         {
@@ -778,22 +1011,115 @@ public sealed partial class DockWindow : Window
 
         menu.Items.Add(new Separator());
 
+        var groups = _services.Items.GetGroups(viewModel.Section);
+        var moveTo = new MenuItem { Header = "Move to group" };
+
+        var none = new MenuItem { Header = "No group" };
+        none.Click += (_, _) => _services.Items.MoveToGroup(id, null);
+        moveTo.Items.Add(none);
+
+        foreach (var group in groups)
+        {
+            var entry = new MenuItem { Header = group.EffectiveName };
+            var groupId = group.Id;
+            entry.Click += (_, _) => _services.Items.MoveToGroup(id, groupId);
+            moveTo.Items.Add(entry);
+        }
+
+        moveTo.Items.Add(new Separator());
+        var newGroup = new MenuItem { Header = "New group…" };
+        newGroup.Click += (_, _) =>
+        {
+            var header = PromptNewGroup(viewModel.Section);
+            if (header is not null)
+            {
+                _services.Items.MoveToGroup(id, header.Id);
+            }
+        };
+        moveTo.Items.Add(newGroup);
+        menu.Items.Add(moveTo);
+
         var up = new MenuItem { Header = "Move up" };
-        up.Click += (_, _) => _services.Items.MoveUp(viewModel.Id);
+        up.Click += (_, _) => _services.Items.MoveUp(id);
         menu.Items.Add(up);
 
         var down = new MenuItem { Header = "Move down" };
-        down.Click += (_, _) => _services.Items.MoveDown(viewModel.Id);
+        down.Click += (_, _) => _services.Items.MoveDown(id);
         menu.Items.Add(down);
+
+        var separatorBelow = new MenuItem { Header = "Add separator below" };
+        separatorBelow.Click += (_, _) => InsertSeparatorBelow(viewModel);
+        menu.Items.Add(separatorBelow);
 
         menu.Items.Add(new Separator());
 
         var remove = new MenuItem { Header = "Remove from dock" };
-        remove.Click += (_, _) => _services.Items.Remove(viewModel.Id);
-        menu.Items.Add(remove);
+        remove.Click += (_, _) =>
+        {
+            if (ReferenceEquals(_selected, viewModel))
+            {
+                SelectItem(null);
+            }
 
-        menu.PlacementTarget = target;
-        menu.IsOpen = true;
+            _services.Items.Remove(id);
+        };
+        menu.Items.Add(remove);
+    }
+
+    private void LaunchQuickAction(LaunchRequest request)
+    {
+        var result = _services.Shell.Launch(request);
+        if (!result.Success)
+        {
+            _services.Logger.Warn($"Quick action failed: {result.Error}");
+        }
+    }
+
+    private GroupHeaderItem? PromptNewGroup(DockSection section)
+    {
+        var name = Microsoft.VisualBasic.Interaction.InputBox(
+            "Name the new group",
+            "Dock Manager",
+            section == DockSection.Applications ? "Apps" : "Files");
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        return _services.Items.AddGroup(section, name.Trim());
+    }
+
+    private void RenameGroup(DockItemViewModel viewModel)
+    {
+        if (viewModel.Item is not GroupHeaderItem header)
+        {
+            return;
+        }
+
+        var name = Microsoft.VisualBasic.Interaction.InputBox("Rename group", "Dock Manager", header.EffectiveName);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return;
+        }
+
+        header.DisplayName = name.Trim();
+
+        // Rebuild the view models so the header label refreshes.
+        _services.Items.ReplaceAll(_services.Items.Items);
+    }
+
+    private void InsertSeparatorBelow(DockItemViewModel viewModel)
+    {
+        var sectionItems = _services.Items.GetItems(viewModel.Section);
+        var index = sectionItems.IndexOf(viewModel.Item);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var separator = _services.Items.AddSeparator(viewModel.Section);
+        _services.Items.Move(separator.Id, index + 1);
     }
 
     private static string OpenLabelFor(DockItemViewModel viewModel) => viewModel.Kind switch
@@ -806,6 +1132,11 @@ public sealed partial class DockWindow : Window
     private void ActivateItem(DockItemViewModel viewModel)
     {
         var item = viewModel.Item;
+
+        if (!item.Kind.IsOpenable())
+        {
+            return;
+        }
 
         if (!viewModel.IsAvailable)
         {
@@ -955,6 +1286,24 @@ public sealed partial class DockWindow : Window
         addFolder.Click += (_, _) => AddFolder();
         add.Items.Add(addFolder);
         menu.Items.Add(add);
+
+        var group = new MenuItem { Header = "New group…" };
+        var groupApps = new MenuItem { Header = "For applications" };
+        groupApps.Click += (_, _) => PromptNewGroup(DockSection.Applications);
+        group.Items.Add(groupApps);
+        var groupFiles = new MenuItem { Header = "For files and folders" };
+        groupFiles.Click += (_, _) => PromptNewGroup(DockSection.Files);
+        group.Items.Add(groupFiles);
+        menu.Items.Add(group);
+
+        var divider = new MenuItem { Header = "Add separator" };
+        var dividerApps = new MenuItem { Header = "Between applications" };
+        dividerApps.Click += (_, _) => _services.Items.AddSeparator(DockSection.Applications);
+        divider.Items.Add(dividerApps);
+        var dividerFiles = new MenuItem { Header = "Between files and folders" };
+        dividerFiles.Click += (_, _) => _services.Items.AddSeparator(DockSection.Files);
+        divider.Items.Add(dividerFiles);
+        menu.Items.Add(divider);
 
         menu.Items.Add(new Separator());
 
@@ -1141,6 +1490,7 @@ public sealed partial class DockWindow : Window
         _panelRefreshTimer.Stop();
         _contentLoadCts?.Cancel();
         _previewCts?.Cancel();
+        _hotkeys?.UnregisterAll();
         _foregroundWatcher.Dispose();
         UnsubscribeRendering();
         _tabPanel?.Close();

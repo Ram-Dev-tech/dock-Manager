@@ -7,7 +7,7 @@ namespace DockManager.Core.Tests;
 
 public class OrganizationTests
 {
-    private static AppItem App(string path) => new(null, path, null) { ExecutablePath = path };
+    private static AppItem App(string path) => new(string.Empty, path) { ExecutablePath = path };
 
     [Fact]
     public void Groups_and_separators_can_be_added_without_a_target()
@@ -134,7 +134,7 @@ public class OrganizationTests
         var store = new ItemStore();
         var group = store.AddGroup(DockSection.Files, "Docs");
         var separator = store.AddSeparator(DockSection.Files);
-        var file = new FileItem(null, "C:\\gone\\file.txt", null);
+        var file = new FileItem(string.Empty, "C:\\gone\\file.txt");
         store.Add(file);
 
         var removed = store.RemoveMissing(new FakeFileSystem());

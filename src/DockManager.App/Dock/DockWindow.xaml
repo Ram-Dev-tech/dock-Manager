@@ -28,18 +28,27 @@
     <Window.Resources>
         <ui:IconConverter x:Key="IconConverter" />
 
-        <!-- Fixed slot size keeps the rendered layout identical to DockMetrics.Compute. -->
+        <!-- Fixed slot size keeps the rendered layout identical to DockMetrics.Compute;
+             separators and group headers collapse to their own compact rows. -->
         <Style x:Key="SlotStyle" TargetType="{x:Type ContentPresenter}">
             <Setter Property="Width" Value="{DynamicResource ItemSize}" />
             <Setter Property="Height" Value="{DynamicResource ItemSize}" />
             <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="Separator">
+                    <Setter Property="Height" Value="9" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="GroupHeader">
+                    <Setter Property="Height" Value="20" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="FooterButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Width" Value="{DynamicResource ItemSize}" />
             <Setter Property="Height" Value="{DynamicResource ItemSize}" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#D9FFFFFF" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Focusable" Value="False" />
@@ -53,10 +62,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBackground" Property="Background" Value="#24FFFFFF" />
+                                <Setter TargetName="ButtonBackground" Property="Background" Value="{DynamicResource ItemHover}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBackground" Property="Background" Value="#33FFFFFF" />
+                                <Setter TargetName="ButtonBackground" Property="Background" Value="{DynamicResource ItemActive}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -79,6 +88,11 @@
                 <Border x:Name="Highlight"
                         Background="Transparent"
                         CornerRadius="{DynamicResource ItemCornerRadius}" />
+                <Border x:Name="SelectionRing"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        BorderThickness="1.5"
+                        CornerRadius="{DynamicResource ItemCornerRadius}"
+                        Visibility="Collapsed" />
                 <Image x:Name="Icon"
                        Source="{Binding IconKey, Converter={StaticResource IconConverter}}"
                        Width="{DynamicResource IconSize}"
@@ -86,13 +100,30 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        RenderOptions.BitmapScalingMode="HighQuality" />
+                <Rectangle x:Name="SeparatorLine"
+                           Width="{DynamicResource SeparatorWidth}"
+                           Height="{DynamicResource SeparatorThickness}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Fill="{DynamicResource TextSecondary}"
+                           Opacity="0.5"
+                           Visibility="Collapsed" />
+                <TextBlock x:Name="GroupLabel"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="9"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondary}"
+                           Text="{Binding Name}"
+                           TextTrimming="CharacterEllipsis"
+                           Visibility="Collapsed" />
                 <Ellipse x:Name="RunningIndicator"
                          Width="{DynamicResource RunningIndicatorSize}"
                          Height="{DynamicResource RunningIndicatorSize}"
                          Margin="0,0,5,5"
                          HorizontalAlignment="Right"
                          VerticalAlignment="Bottom"
-                         Fill="#FF6EC1FF"
+                         Fill="{DynamicResource AccentBrush}"
                          Visibility="Collapsed" />
                 <Border x:Name="MissingBadge"
                         Width="12"
@@ -116,12 +147,23 @@
                     <Setter TargetName="RunningIndicator" Property="Visibility" Value="Visible" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsActive}" Value="True">
-                    <Setter TargetName="Highlight" Property="Background" Value="#26FFFFFF" />
-                    <Setter TargetName="RunningIndicator" Property="Fill" Value="#FFFFFFFF" />
+                    <Setter TargetName="Highlight" Property="Background" Value="{DynamicResource ItemActive}" />
+                    <Setter TargetName="RunningIndicator" Property="Fill" Value="{DynamicResource TextPrimary}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsAvailable}" Value="False">
                     <Setter TargetName="Icon" Property="Opacity" Value="0.3" />
                     <Setter TargetName="MissingBadge" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="SelectionRing" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Separator">
+                    <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="SeparatorLine" Property="Visibility" Value="Visible" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="GroupHeader">
+                    <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+                    <Setter TargetName="GroupLabel" Property="Visibility" Value="Visible" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -130,7 +172,7 @@
     <Border x:Name="Panel"
             Padding="{DynamicResource DockPadding}"
             Background="{DynamicResource PanelBackground}"
-            BorderBrush="#2EFFFFFF"
+            BorderBrush="{DynamicResource PanelBorder}"
             BorderThickness="1"
             CornerRadius="{DynamicResource PanelCornerRadius}"
             MouseRightButtonUp="OnPanelMouseRightButtonUp">
@@ -144,29 +186,57 @@
 
         <Grid>
             <StackPanel Orientation="Vertical">
-                <ItemsControl x:Name="ApplicationsList"
-                              Focusable="False"
-                              ItemContainerStyle="{StaticResource SlotStyle}"
-                              ItemTemplate="{StaticResource ItemTemplate}"
-                              ItemsSource="{Binding Applications}" />
+                <!-- Light filter box; only shown once the dock holds enough items for it to help. -->
+                <Border x:Name="SearchHost"
+                        Margin="0,0,0,6"
+                        Background="{DynamicResource ItemHover}"
+                        CornerRadius="6"
+                        Visibility="Collapsed">
+                    <TextBox x:Name="SearchBox"
+                             Padding="6,3"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             CaretBrush="{DynamicResource TextPrimary}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextPrimary}"
+                             TextChanged="OnSearchTextChanged"
+                             ToolTip="Filter dock items"
+                             PreviewMouseLeftButtonDown="OnSearchPreviewMouseDown" />
+                </Border>
 
-                <Rectangle x:Name="ApplicationsSeparator"
-                           Height="{DynamicResource SeparatorThickness}"
-                           Margin="{DynamicResource SeparatorMargin}"
-                           Width="{DynamicResource SeparatorWidth}"
-                           Fill="#24FFFFFF" />
-
-                <ItemsControl x:Name="FilesList"
+                <!-- The dock never grows past the screen: overflow scrolls inside this area. -->
+                <ScrollViewer x:Name="ItemsScroll"
                               Focusable="False"
-                              ItemContainerStyle="{StaticResource SlotStyle}"
-                              ItemTemplate="{StaticResource ItemTemplate}"
-                              ItemsSource="{Binding Files}" />
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Hidden">
+                    <StackPanel Orientation="Vertical">
+                        <ItemsControl x:Name="ApplicationsList"
+                                      Focusable="False"
+                                      ItemContainerStyle="{StaticResource SlotStyle}"
+                                      ItemTemplate="{StaticResource ItemTemplate}"
+                                      ItemsSource="{Binding Applications}" />
+
+                        <Rectangle x:Name="ApplicationsSeparator"
+                                   Height="{DynamicResource SeparatorThickness}"
+                                   Margin="{DynamicResource SeparatorMargin}"
+                                   Width="{DynamicResource SeparatorWidth}"
+                                   Fill="{DynamicResource TextSecondary}"
+                                   Opacity="0.35" />
+
+                        <ItemsControl x:Name="FilesList"
+                                      Focusable="False"
+                                      ItemContainerStyle="{StaticResource SlotStyle}"
+                                      ItemTemplate="{StaticResource ItemTemplate}"
+                                      ItemsSource="{Binding Files}" />
+                    </StackPanel>
+                </ScrollViewer>
 
                 <Rectangle x:Name="FilesSeparator"
                            Height="{DynamicResource SeparatorThickness}"
                            Margin="{DynamicResource SeparatorMargin}"
                            Width="{DynamicResource SeparatorWidth}"
-                           Fill="#24FFFFFF" />
+                           Fill="{DynamicResource TextSecondary}"
+                           Opacity="0.35" />
 
                 <StackPanel Orientation="Vertical">
                     <Button x:Name="AddButton"
@@ -192,7 +262,7 @@
             <Canvas x:Name="Overlay" IsHitTestVisible="False">
                 <Rectangle x:Name="InsertionIndicator"
                            Height="2"
-                           Fill="#FF6EC1FF"
+                           Fill="{DynamicResource AccentBrush}"
                            RadiusX="1"
                            RadiusY="1"
                            Visibility="Collapsed" />

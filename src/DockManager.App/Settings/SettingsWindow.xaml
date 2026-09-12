@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Dock Manager Settings"
-        Width="360"
+        Width="380"
         SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen"
@@ -24,75 +24,251 @@
         <Style x:Key="SectionBox" TargetType="StackPanel">
             <Setter Property="Margin" Value="0,0,0,18" />
         </Style>
+        <Style x:Key="Radio" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#FFEEEEEE" />
+            <Setter Property="Margin" Value="0,0,14,0" />
+        </Style>
+        <Style x:Key="Check" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#FFEEEEEE" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+        <Style x:Key="ShortcutBox" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Background" Value="#22FFFFFF" />
+            <Setter Property="Foreground" Value="#FFEEEEEE" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Focusable" Value="True" />
+        </Style>
     </Window.Resources>
 
-    <StackPanel Margin="22,18">
-        <StackPanel Style="{StaticResource SectionBox}">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="DOCK" />
-            <StackPanel Orientation="Horizontal">
-                <RadioButton x:Name="EdgeLeft" Content="Left" Foreground="#FFEEEEEE" Margin="0,0,18,0" Checked="OnEdgeChecked" />
-                <RadioButton x:Name="EdgeRight" Content="Right" Foreground="#FFEEEEEE" Checked="OnEdgeChecked" />
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="22,18">
+
+            <!-- DOCK ----------------------------------------------------------------------- -->
+            <StackPanel Style="{StaticResource SectionBox}">
+                <TextBlock Style="{StaticResource SectionHeader}" Text="DOCK" />
+
+                <TextBlock Style="{StaticResource Caption}" Text="Position" />
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="130" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <RadioButton x:Name="EdgeLeft" Content="Left edge" Style="{StaticResource Radio}" Margin="0,0,0,6" Checked="OnEdgeChecked" />
+                        <RadioButton x:Name="EdgeRight" Content="Right edge" Style="{StaticResource Radio}" Checked="OnEdgeChecked" />
+                    </StackPanel>
+                    <!-- Mini preview of where the dock will sit. -->
+                    <Border Grid.Column="1"
+                            Width="110"
+                            Height="66"
+                            HorizontalAlignment="Left"
+                            Background="#22FFFFFF"
+                            BorderBrush="#33FFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="4">
+                        <Grid>
+                            <Rectangle x:Name="PreviewLeft"
+                                       Width="10"
+                                       Margin="4"
+                                       HorizontalAlignment="Left"
+                                       Fill="#FF6EC1FF"
+                                       RadiusX="2"
+                                       RadiusY="2" />
+                            <Rectangle x:Name="PreviewRight"
+                                       Width="10"
+                                       Margin="4"
+                                       HorizontalAlignment="Right"
+                                       Fill="#FF6EC1FF"
+                                       RadiusX="2"
+                                       RadiusY="2"
+                                       Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <TextBlock Style="{StaticResource Caption}" Text="Edge activation" />
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <RadioButton x:Name="SensitivityLess" Content="Less sensitive" Style="{StaticResource Radio}" Checked="OnSensitivityChecked" />
+                    <RadioButton x:Name="SensitivityNormal" Content="Normal" Style="{StaticResource Radio}" Checked="OnSensitivityChecked" />
+                    <RadioButton x:Name="SensitivityMore" Content="More sensitive" Style="{StaticResource Radio}" Checked="OnSensitivityChecked" />
+                </StackPanel>
+
+                <CheckBox x:Name="AutoHideBox"
+                          Content="Automatically hide the dock when the cursor leaves"
+                          Style="{StaticResource Check}"
+                          Checked="OnAutoHideChanged"
+                          Unchecked="OnAutoHideChanged" />
+                <TextBlock x:Name="HideDelayLabel" Style="{StaticResource Caption}" Text="Hide delay" />
+                <Slider x:Name="HideDelaySlider" Minimum="0" Maximum="2000" SmallChange="50" LargeChange="100" ValueChanged="OnHideDelayChanged" />
             </StackPanel>
-        </StackPanel>
 
-        <StackPanel Style="{StaticResource SectionBox}">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="APPEARANCE" />
-            <TextBlock Text="Dock size" FontSize="12" Margin="0,0,0,4" />
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <RadioButton x:Name="SizeCompact" Content="Compact" Foreground="#FFEEEEEE" Margin="0,0,12,0" Checked="OnSizeChecked" />
-                <RadioButton x:Name="SizeNormal" Content="Normal" Foreground="#FFEEEEEE" Margin="0,0,12,0" Checked="OnSizeChecked" />
-                <RadioButton x:Name="SizeLarge" Content="Large" Foreground="#FFEEEEEE" Checked="OnSizeChecked" />
+            <!-- APPEARANCE ------------------------------------------------------------------ -->
+            <StackPanel Style="{StaticResource SectionBox}">
+                <TextBlock Style="{StaticResource SectionHeader}" Text="APPEARANCE" />
+
+                <TextBlock Style="{StaticResource Caption}" Text="Dock size" />
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <RadioButton x:Name="SizeCompact" Content="Small" Style="{StaticResource Radio}" Checked="OnSizeChecked" />
+                    <RadioButton x:Name="SizeNormal" Content="Medium" Style="{StaticResource Radio}" Checked="OnSizeChecked" />
+                    <RadioButton x:Name="SizeLarge" Content="Large" Style="{StaticResource Radio}" Checked="OnSizeChecked" />
+                </StackPanel>
+
+                <TextBlock Style="{StaticResource Caption}" Text="Icon size" />
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="34" />
+                    </Grid.ColumnDefinitions>
+                    <Slider x:Name="IconSlider" Minimum="20" Maximum="56" SmallChange="1" ValueChanged="OnIconSliderChanged" />
+                    <TextBlock x:Name="IconValue" Grid.Column="1" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+
+                <TextBlock Style="{StaticResource Caption}" Text="Theme" />
+                <StackPanel Margin="0,0,0,10" Orientation="Horizontal">
+                    <RadioButton x:Name="ThemeSystem" Content="Follow Windows" Style="{StaticResource Radio}" Checked="OnThemeChecked" />
+                    <RadioButton x:Name="ThemeLight" Content="Light" Style="{StaticResource Radio}" Checked="OnThemeChecked" />
+                    <RadioButton x:Name="ThemeDark" Content="Dark" Style="{StaticResource Radio}" Checked="OnThemeChecked" />
+                </StackPanel>
+
+                <CheckBox x:Name="AnimationsBox"
+                          Content="Show reveal animation (also follows Windows reduced-motion)"
+                          Style="{StaticResource Check}"
+                          Checked="OnAnimationsChanged"
+                          Unchecked="OnAnimationsChanged" />
             </StackPanel>
-            <TextBlock Text="Icon size" FontSize="12" Margin="0,0,0,4" />
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="34" />
-                </Grid.ColumnDefinitions>
-                <Slider x:Name="IconSlider" Minimum="20" Maximum="56" SmallChange="1" ValueChanged="OnIconSliderChanged" />
-                <TextBlock x:Name="IconValue" Grid.Column="1" TextAlignment="Right" VerticalAlignment="Center" FontSize="12" />
-            </Grid>
-        </StackPanel>
 
-        <StackPanel Style="{StaticResource SectionBox}">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="BEHAVIOUR" />
-            <CheckBox x:Name="AutoHideBox" Content="Automatically hide the dock when the cursor leaves" Foreground="#FFEEEEEE" Margin="0,0,0,8" Checked="OnAutoHideChanged" Unchecked="OnAutoHideChanged" />
-            <TextBlock x:Name="HideDelayLabel" Text="Hide delay" FontSize="12" Margin="0,0,0,4" />
-            <Slider x:Name="HideDelaySlider" Minimum="0" Maximum="2000" SmallChange="50" LargeChange="100" ValueChanged="OnHideDelayChanged" />
-        </StackPanel>
+            <!-- ITEMS ------------------------------------------------------------------------ -->
+            <StackPanel Style="{StaticResource SectionBox}">
+                <TextBlock Style="{StaticResource SectionHeader}" Text="ITEMS" />
+                <CheckBox x:Name="SearchBoxSetting"
+                          Content="Show a filter box on the dock when it holds many items"
+                          Style="{StaticResource Check}"
+                          Checked="OnSearchChanged"
+                          Unchecked="OnSearchChanged" />
+            </StackPanel>
 
-        <StackPanel Style="{StaticResource SectionBox}">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="APPLICATIONS" />
-            <CheckBox x:Name="HoverPanelBox"
-                      Content="Show what an app has open when hovering it"
-                      Foreground="#FFEEEEEE"
-                      Margin="0,0,0,8"
-                      Checked="OnHoverPanelChanged"
-                      Unchecked="OnHoverPanelChanged" />
-            <CheckBox x:Name="PreviewBox"
-                      Content="Show a small window preview in the hover panel"
-                      Foreground="#FFEEEEEE"
-                      Margin="0,0,0,10"
-                      Checked="OnPreviewChanged"
-                      Unchecked="OnPreviewChanged" />
-            <TextBlock Text="Hover panel appears after" FontSize="12" Margin="0,0,0,4" />
-            <Grid Margin="0,0,0,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="54" />
-                </Grid.ColumnDefinitions>
-                <Slider x:Name="HoverDelaySlider" Minimum="0" Maximum="1000" SmallChange="20" LargeChange="50" ValueChanged="OnHoverDelayChanged" />
-                <TextBlock x:Name="HoverDelayValue" Grid.Column="1" TextAlignment="Right" VerticalAlignment="Center" FontSize="12" />
-            </Grid>
-            <TextBlock Text="App support" FontSize="12" Margin="0,0,0,4" />
-            <StackPanel x:Name="IntegrationListHost" />
-        </StackPanel>
+            <!-- APPLICATIONS ------------------------------------------------------------------ -->
+            <StackPanel Style="{StaticResource SectionBox}">
+                <TextBlock Style="{StaticResource SectionHeader}" Text="APPLICATIONS" />
+                <CheckBox x:Name="HoverPanelBox"
+                          Content="Show what an app has open when hovering it"
+                          Style="{StaticResource Check}"
+                          Checked="OnHoverPanelChanged"
+                          Unchecked="OnHoverPanelChanged" />
+                <CheckBox x:Name="PreviewBox"
+                          Content="Show a small window preview in the hover panel"
+                          Style="{StaticResource Check}"
+                          Checked="OnPreviewChanged"
+                          Unchecked="OnPreviewChanged" />
+                <TextBlock Style="{StaticResource Caption}" Text="Hover panel appears after" />
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="54" />
+                    </Grid.ColumnDefinitions>
+                    <Slider x:Name="HoverDelaySlider" Minimum="0" Maximum="1000" SmallChange="20" LargeChange="50" ValueChanged="OnHoverDelayChanged" />
+                    <TextBlock x:Name="HoverDelayValue" Grid.Column="1" FontSize="12" TextAlignment="Right" VerticalAlignment="Center" />
+                </Grid>
+                <TextBlock Style="{StaticResource Caption}" Text="App support" />
+                <StackPanel x:Name="IntegrationListHost" />
+            </StackPanel>
 
-        <StackPanel Style="{StaticResource SectionBox}">
-            <TextBlock Style="{StaticResource SectionHeader}" Text="STARTUP" />
-            <CheckBox x:Name="StartupBox" Content="Launch Dock Manager when Windows starts" Foreground="#FFEEEEEE" Checked="OnStartupChanged" Unchecked="OnStartupChanged" />
-        </StackPanel>
+            <!-- SHORTCUTS ---------------------------------------------------------------------- -->
+            <StackPanel Style="{StaticResource SectionBox}">
+                <TextBlock Style="{StaticResource SectionHeader}" Text="SHORTCUTS" />
+                <TextBlock FontSize="11"
+                           Foreground="#8AFFFFFF"
+                           Margin="0,0,0,8"
+                           Text="Click a shortcut and press the keys you want. Windows shortcuts are never taken."
+                           TextWrapping="Wrap" />
 
-        <Button Content="Close" Click="OnCloseClicked" HorizontalAlignment="Right" Padding="18,5" />
-    </StackPanel>
+                <TextBlock Style="{StaticResource Caption}" Text="Open dock / open selected item" />
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="OpenDockShortcut"
+                             Style="{StaticResource ShortcutBox}"
+                             Tag="OpenDock"
+                             PreviewMouseDown="OnShortcutBoxMouseDown"
+                             PreviewKeyDown="OnShortcutBoxKeyDown"
+                             LostKeyboardFocus="OnShortcutBoxLostFocus" />
+                    <Button Grid.Column="1"
+                            Margin="6,0,0,0"
+                            Padding="8,3"
+                            Click="OnShortcutClearClicked"
+                            Content="Clear"
+                            Tag="OpenDock" />
+                </Grid>
+
+                <TextBlock Style="{StaticResource Caption}" Text="Select next item" />
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="NextItemShortcut"
+                             Style="{StaticResource ShortcutBox}"
+                             Tag="NextItem"
+                             PreviewMouseDown="OnShortcutBoxMouseDown"
+                             PreviewKeyDown="OnShortcutBoxKeyDown"
+                             LostKeyboardFocus="OnShortcutBoxLostFocus" />
+                    <Button Grid.Column="1"
+                            Margin="6,0,0,0"
+                            Padding="8,3"
+                            Click="OnShortcutClearClicked"
+                            Content="Clear"
+                            Tag="NextItem" />
+                </Grid>
+
+                <TextBlock Style="{StaticResource Caption}" Text="Select previous item" />
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="PreviousItemShortcut"
+                             Style="{StaticResource ShortcutBox}"
+                             Tag="PreviousItem"
+                             PreviewMouseDown="OnShortcutBoxMouseDown"
+                             PreviewKeyDown="OnShortcutBoxKeyDown"
+                             LostKeyboardFocus="OnShortcutBoxLostFocus" />
+                    <Button Grid.Column="1"
+                            Margin="6,0,0,0"
+                            Padding="8,3"
+                            Click="OnShortcutClearClicked"
+                            Content="Clear"
+                            Tag="PreviousItem" />
+                </Grid>
+
+                <TextBlock x:Name="ShortcutWarning"
+                           FontSize="11"
+                           Foreground="#FFE0A33E"
+                           TextWrapping="Wrap"
+                           Visibility="Collapsed" />
+            </StackPanel>
+
+            <!-- GENERAL ------------------------------------------------------------------------ -->
+            <StackPanel Style="{StaticResource SectionBox}">
+                <TextBlock Style="{StaticResource SectionHeader}" Text="GENERAL" />
+                <CheckBox x:Name="StartupBox"
+                          Content="Launch Dock Manager when Windows starts"
+                          Style="{StaticResource Check}"
+                          Checked="OnStartupChanged"
+                          Unchecked="OnStartupChanged" />
+                <TextBlock Style="{StaticResource Caption}" Text="Show the dock on" />
+                <ComboBox x:Name="MonitorCombo" SelectionChanged="OnMonitorSelected" />
+            </StackPanel>
+
+            <Button Content="Close" Click="OnCloseClicked" HorizontalAlignment="Right" Padding="18,5" />
+        </StackPanel>
+    </ScrollViewer>
 </Window>

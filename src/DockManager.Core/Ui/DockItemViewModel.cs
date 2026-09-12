@@ -105,6 +105,11 @@ public sealed class DockItemViewModel : INotifyPropertyChanged
 
     public string BuildTooltip()
     {
+        if (!Item.Kind.IsOpenable())
+        {
+            return string.Empty;
+        }
+
         if (!IsAvailable)
         {
             return $"{Name} — unavailable. Right-click to remove.";

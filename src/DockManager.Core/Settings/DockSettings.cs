@@ -113,6 +113,10 @@ public sealed class DockSettings
     /// <summary>Global keyboard shortcuts, one per action.</summary>
     public List<ShortcutRecord> Shortcuts { get; set; } = ShortcutDefaults.Create();
 
+    /// <summary>The binding for an action, or null when it has none.</summary>
+    public ShortcutRecord? ShortcutFor(DockShortcutAction action)
+        => Shortcuts.FirstOrDefault(record => record is not null && record.Action == action);
+
     public DockLayoutMetrics CreateLayoutMetrics() => DockLayoutMetrics.ForIconSize(IconSize);
 
     public DockVisibilityOptions CreateVisibilityOptions() => new()

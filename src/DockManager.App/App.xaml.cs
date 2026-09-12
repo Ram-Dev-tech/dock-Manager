@@ -29,6 +29,7 @@ public partial class App : Application
     private IntegrationWorker? _integrationWorker;
     private DockWindow? _dock;
     private SettingsWindow? _settingsWindow;
+    private readonly MonitorInfoSource _monitorSource = new();
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -90,7 +91,7 @@ public partial class App : Application
         var activator = new WindowActivator(logger);
         var integrationWorker = new IntegrationWorker();
         _integrationWorker = integrationWorker;
-        var applications = new ApplicationManager(new GenericIntegration());
+        var applications = new ApplicationManager(new GenericIntegration(activator));
         applications.Register(new ChromeIntegration(integrationWorker, activator, logger));
         applications.Register(new EdgeIntegration(integrationWorker, activator, logger));
         applications.Register(new VSCodeIntegration(integrationWorker, activator, logger));
@@ -152,7 +153,12 @@ public partial class App : Application
     {
         if (_settingsWindow is null)
         {
-            _settingsWindow = new SettingsWindow(_services!.Settings, _services.Startup, _services.Applications.Registered);
+            _settingsWindow = new SettingsWindow(
+                _services!.Settings,
+                _services.Startup,
+                _services.Applications.Registered,
+                () => _dock?.HotkeyConflicts ?? [],
+                () => _monitorSource.EnumerateMonitors());
             _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         }
 

@@ -15,7 +15,7 @@ public class SearchAndQuickActionTests
     [InlineData("chrome")]
     public void Matches_items_by_name_ignoring_case(string query)
     {
-        var item = new AppItem(null, "C:\\Apps\\chrome.exe", "Chrome") { ExecutablePath = "C:\\Apps\\chrome.exe" };
+        var item = new AppItem(string.Empty, "C:\\Apps\\chrome.exe", "Chrome") { ExecutablePath = "C:\\Apps\\chrome.exe" };
 
         Assert.True(ItemSearchFilter.Matches(item, query));
     }
@@ -23,7 +23,7 @@ public class SearchAndQuickActionTests
     [Fact]
     public void Matches_by_path_and_resolved_executable()
     {
-        var item = new AppItem(null, "C:\\Start Menu\\Visual Studio Code.lnk", null)
+        var item = new AppItem(string.Empty, "C:\\Start Menu\\Visual Studio Code.lnk")
         {
             ExecutablePath = "C:\\Program Files\\code.exe",
         };
@@ -35,7 +35,7 @@ public class SearchAndQuickActionTests
     [Fact]
     public void Empty_query_matches_openable_items_only()
     {
-        Assert.True(ItemSearchFilter.Matches(new FileItem(null, "C:\\notes.txt", null), ""));
+        Assert.True(ItemSearchFilter.Matches(new FileItem(string.Empty, "C:\\notes.txt"), ""));
         Assert.False(ItemSearchFilter.Matches(new SeparatorItem(null, DockSection.Files), ""));
         Assert.False(ItemSearchFilter.Matches(new GroupHeaderItem(null, "G", DockSection.Files), ""));
     }
@@ -43,7 +43,7 @@ public class SearchAndQuickActionTests
     [Fact]
     public void Non_matching_queries_do_not_match()
     {
-        var item = new FolderItem(null, "C:\\Projects", null);
+        var item = new FolderItem(string.Empty, "C:\\Projects");
 
         Assert.False(ItemSearchFilter.Matches(item, "zzz"));
         Assert.False(ItemSearchFilter.Matches(null, "anything"));
