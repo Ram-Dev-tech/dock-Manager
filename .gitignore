@@ -1,16 +1,10 @@
-# Build results
-bin/
-obj/
-artifacts/
-publish/
-*.user
-*.suo
+```
+# Dependencies
+node_modules/
 
-# Rider / VS Code
-.idea/
+# Editors
 .vscode/
-.vs/
 
-# OS noise
-.DS_Store
-Thumbs.db
+# Environment
+.env*
+```

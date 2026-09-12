@@ -7,13 +7,13 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest</AnalysisLevel>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <Product>Dock Manager</Product>
+    <Product>Windows Vertical Dock</Product>
     <Company>dock-Manager</Company>
     <Copyright>Copyright (c) Ram</Copyright>
-    <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
-    <InformationalVersion>0.1.0-phase1</InformationalVersion>
+    <Version>0.1.1</Version>
+    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <FileVersion>0.1.1.0</FileVersion>
+    <InformationalVersion>0.1.1</InformationalVersion>
   </PropertyGroup>
 
 </Project>
