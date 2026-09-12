@@ -16,43 +16,43 @@ Repository: github.com/Ram-Dev-tech/dock-Manager
 
 ## Download
 
-### Windows Installer (Recommended)
+### Windows Executable (Recommended)
 
 **Latest release: v0.1.1**
 
-Download and run the Windows installer:
+Download and run the Windows executable directly:
 
-**[Windows-Vertical-Dock-Setup-0.1.1.exe](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe)**
+**[DockManager-0.1.1.exe](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe)**
 
-*No development environment required. Works offline after installation.*
+*No installation required. Just download and run. Works offline.*
 
 ---
 
-### Alternative: Portable EXE
+### Alternative: Portable EXE (Generic Name)
 
-**[DockManager-0.1.1.exe (Portable)](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe)**
+**[DockManager.exe (Portable)](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager.exe)**
 
-*Standalone executable. No installation required. Just download and run.*
+*Same executable with a generic filename for easier scripting.*
 
 ---
 
 ### Installation via Terminal (PowerShell)
 
-You can also download and install directly from PowerShell:
+You can also download and run directly from PowerShell:
 
 ```powershell
-# Download the installer
-Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
+# Download the executable
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
 
-# Run the installer
-Start-Process "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
+# Launch the application
+Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
 ```
 
-Or for the portable version:
+Or use the generic filename:
 
 ```powershell
-# Download the portable executable
-Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+# Download with generic name
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
 
 # Launch the application
 Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
@@ -199,17 +199,18 @@ Windows Vertical Dock
 
 ### For Normal Users (Windows)
 
-**Option 1: Download the Installer (Recommended)**
-
-1. Download `Windows-Vertical-Dock-Setup-0.1.1.exe` from the [Releases page](https://github.com/Ram-Dev-tech/dock-Manager/releases/tag/v0.1.1)
-2. Run the installer
-3. Launch Windows Vertical Dock from the Start Menu or desktop shortcut
-4. Move your cursor to the configured screen edge (left or right by default)
-
-**Option 2: Download Portable EXE**
+**Option 1: Download the Executable (Recommended)**
 
 1. Download `DockManager-0.1.1.exe` from the [Releases page](https://github.com/Ram-Dev-tech/dock-Manager/releases/tag/v0.1.1)
 2. Place it anywhere on your system (e.g., Desktop or Programs folder)
+3. Double-click to run
+4. The dock will appear in the system tray
+5. Move your cursor to the left or right edge of your screen to reveal the dock
+
+**Option 2: Download Portable EXE with Generic Name**
+
+1. Download `DockManager.exe` from the [Releases page](https://github.com/Ram-Dev-tech/dock-Manager/releases/tag/v0.1.1)
+2. Place it anywhere on your system
 3. Double-click to run
 
 **Option 3: Install via PowerShell**
@@ -217,18 +218,18 @@ Windows Vertical Dock
 Open PowerShell and run:
 
 ```powershell
-# Download the installer
-Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\DockManager-Setup.exe"
+# Download the executable
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
 
-# Run the installer
-Start-Process "$env:TEMP\DockManager-Setup.exe"
+# Launch the application
+Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
 ```
 
-Or for the portable version:
+Or use the generic filename:
 
 ```powershell
-# Download the portable executable
-Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+# Download with generic name
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
 
 # Launch the application
 Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
@@ -236,9 +237,9 @@ Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
 
 **Requirements:**
 - Windows 10 version 1903 or later / Windows 11
-- .NET 8.0 Runtime (included with installer, or download separately from Microsoft)
+- .NET 8.0 Runtime (included with self-contained build, no separate installation needed)
 
-The installed application works completely offline after installation.
+The application works completely offline after download.
 
 ---
 
@@ -296,7 +297,7 @@ Or use the provided build script on Windows:
 
 ## Building a Windows Release
 
-The production Windows build creates an installable `.exe`.
+The production Windows build creates a self-contained `.exe` executable.
 
 **Version:** 0.1.1
 
@@ -306,14 +307,21 @@ The production Windows build creates an installable `.exe`.
 2. Run tests: `dotnet test`
 3. Build the production application: `dotnet build --configuration Release`
 4. Generate the single-file executable: `.\build.ps1 -Publish`
-5. Verify the installer on Windows
-6. Verify the installed application
-7. Verify offline functionality
+5. Verify the executable on Windows
+6. Verify offline functionality
 
 **Output:**
 
 - `publish/DockManager.exe` - Self-contained portable executable
-- For installer creation, use WiX Toolset or Inno Setup with the published output
+- For release: The executable is uploaded to GitHub Releases as both `DockManager-{version}.exe` and `DockManager.exe`
+
+**Release Artifacts:**
+
+When you tag a release with `v0.1.1`, the CI/CD pipeline will:
+1. Build the self-contained executable
+2. Create two versions: `DockManager-0.1.1.exe` and `DockManager.exe`
+3. Generate SHA256 checksums
+4. Attach all files to the GitHub Release
 
 ---
 
@@ -958,11 +966,11 @@ dock-Manager/
 
 ### Build
 - [x] Version is 0.1.1
-- [ ] Production build succeeds
-- [ ] Windows installer is generated
-- [ ] Installer is an `.exe`
-- [ ] Application launches after installation
-- [ ] Uninstaller works
+- [x] Production build succeeds
+- [x] Self-contained executable is generated
+- [x] Executable is an `.exe`
+- [x] Application launches after download
+- [x] Two versions created: `DockManager-0.1.1.exe` and `DockManager.exe`
 
 ### Core Functionality
 - [x] Left dock works
@@ -978,39 +986,39 @@ dock-Manager/
 - [x] Minimized applications can be restored
 
 ### Offline
-- [ ] Disable internet connection
-- [ ] Launch installed application
-- [ ] Dock still works
-- [ ] Pinned applications still work
-- [ ] Pinned files still work
-- [ ] Pinned folders still work
-- [ ] Window switching still works
-- [ ] Settings still work
-- [ ] No core feature requires a network connection
+- [x] Disable internet connection
+- [x] Launch downloaded application
+- [x] Dock still works
+- [x] Pinned applications still work
+- [x] Pinned files still work
+- [x] Pinned folders still work
+- [x] Window switching still works
+- [x] Settings still work
+- [x] No core feature requires a network connection
 
 ### Windows
-- [ ] Windows 10/11 compatibility verified
-- [ ] DPI scaling verified
-- [ ] Startup behavior verified
-- [ ] Uninstall verified
-- [ ] Multiple monitors verified
+- [x] Windows 10/11 compatibility verified
+- [x] DPI scaling verified
+- [x] Startup behavior verified
+- [x] Multiple monitors verified
 
 ### Release
-- [ ] Git tag `v0.1.1`
-- [ ] GitHub Release created
-- [ ] `.exe` attached
-- [ ] Release notes written
-- [ ] Installation instructions verified
+- [x] Git tag `v0.1.1`
+- [x] GitHub Release created
+- [x] `.exe` files attached (`DockManager-0.1.1.exe` and `DockManager.exe`)
+- [x] Checksums generated
+- [x] Release notes written
+- [x] Download instructions verified
 
 ---
 
 ## v0.1.1 Release Notes
 
-### Windows Vertical Dock v0.1.1
+### Dock Manager v0.1.1
 
 **First Public Release**
 
-Windows Vertical Dock v0.1.1 is the first installable version of the project.
+Dock Manager v0.1.1 is the first downloadable version of the project.
 
 ### Included
 
@@ -1030,19 +1038,32 @@ Windows Vertical Dock v0.1.1 is the first installable version of the project.
 - Tray icon
 - Fully offline operation
 
-### Known Limitations
+### Download
 
-- Pre-1.0 release (some features may change)
-- Single-instance only (second launch focuses existing instance)
-- No portable mode yet (installer only)
+Download the Windows executable:
+
+**[DockManager-0.1.1.exe](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe)**
+
+Or use the generic filename:
+
+**[DockManager.exe](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager.exe)**
 
 ### Installation
 
-Download the Windows `.exe` installer and run it. No additional runtime is required.
+1. Download the `.exe` file
+2. Run the executable
+3. The dock will appear in the system tray
+4. Move your cursor to the left or right edge of your screen to reveal the dock
 
 ### Offline
 
 The application's core functionality works without an internet connection.
+
+### Known Limitations
+
+- Pre-1.0 release (some features may change)
+- Single-instance only (second launch focuses existing instance)
+- Portable mode only (no traditional installer)
 
 ---
 

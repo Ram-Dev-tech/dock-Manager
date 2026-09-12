@@ -50,18 +50,39 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Building version $VERSION"
 
-      - name: Create Installer Directory
+      - name: Create Release Assets
         run: |
-          mkdir installer
-          copy publish\DockManager.exe installer\
-          copy LICENSE installer\
-          copy README.md installer\
+          mkdir release-assets
+          copy publish\DockManager.exe release-assets\DockManager-${{ steps.version.outputs.version }}.exe
+          copy publish\DockManager.exe release-assets\DockManager.exe
+          copy LICENSE release-assets\
+          
+          # Create checksums
+          cd release-assets
+          $hash = Get-FileHash DockManager-${{ steps.version.outputs.version }}.exe -Algorithm SHA256
+          "$($hash.Hash)  DockManager-${{ steps.version.outputs.version }}.exe" > checksums.txt
+          $hash = Get-FileHash DockManager.exe -Algorithm SHA256
+          "$($hash.Hash)  DockManager.exe" >> checksums.txt
 
-      - name: Upload Artifact
+      - name: Upload Executable
         uses: actions/upload-artifact@v4
         with:
-          name: DockManager-${{ steps.version.outputs.version }}
-          path: installer/
+          name: DockManager-Executable
+          path: release-assets/DockManager-${{ steps.version.outputs.version }}.exe
+          retention-days: 30
+
+      - name: Upload Portable EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: DockManager-Portable
+          path: release-assets/DockManager.exe
+          retention-days: 30
+
+      - name: Upload Checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: DockManager-Checksums
+          path: release-assets/checksums.txt
           retention-days: 30
 
   release:
@@ -71,10 +92,22 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     
     steps:
-      - name: Download Artifact
+      - name: Download Executable
         uses: actions/download-artifact@v4
         with:
-          name: DockManager-*
+          name: DockManager-Executable
+          path: release-artifacts/
+
+      - name: Download Portable EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: DockManager-Portable
+          path: release-artifacts/
+
+      - name: Download Checksums
+        uses: actions/download-artifact@v4
+        with:
+          name: DockManager-Checksums
           path: release-artifacts/
 
       - name: Get Version
@@ -83,11 +116,6 @@ jobs:
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create Release Archive
-        run: |
-          cd release-artifacts
-          zip -r ../DockManager-${{ steps.version.outputs.version }}.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -120,11 +148,17 @@ jobs:
             
             ### Installation
             
-            1. Download `DockManager-${{ steps.version.outputs.version }}.zip`
-            2. Extract the archive
-            3. Run `DockManager.exe`
-            4. The dock will appear in the system tray
-            5. Move your cursor to the left edge of your screen to reveal the dock
+            **Option 1: Direct Download (Recommended)**
+            1. Download `DockManager-${{ steps.version.outputs.version }}.exe`
+            2. Run the executable
+            3. The dock will appear in the system tray
+            4. Move your cursor to the left edge of your screen to reveal the dock
+            
+            **Option 2: PowerShell**
+            ```powershell
+            Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v${{ steps.version.outputs.version }}/DockManager-${{ steps.version.outputs.version }}.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+            Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
+            ```
             
             ### Offline
             
@@ -139,6 +173,9 @@ jobs:
             ### Feedback
             
             Please report issues or feature requests on the GitHub repository.
-          files: DockManager-${{ steps.version.outputs.version }}.zip
+          files: |
+            release-artifacts/DockManager-${{ steps.version.outputs.version }}.exe
+            release-artifacts/DockManager.exe
+            release-artifacts/checksums.txt
           draft: false
           prerelease: true
