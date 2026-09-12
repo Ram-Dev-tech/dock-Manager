@@ -1,1 +1,43 @@
-Nothing should be ignored based on the provided file changes. The only modified file is README.md, which is a source/config file and should not be added to .gitignore. There are no build artifacts, dependencies, or temporary files in the changes.
+```
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Dependencies
+node_modules/
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+coverage/
+htmlcov/
+.dist-info/
+
+# Build artifacts
+dist/
+build/
+target/
+*.pyc
+*.class
+*.o
+*.obj
+*.out
+*.dll
+*.so
+*.a
+
+# System files
+.DS_Store
+Thumbs.db
+```

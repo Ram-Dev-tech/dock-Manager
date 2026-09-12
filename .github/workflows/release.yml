@@ -60,7 +60,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Windows-Vertical-Dock-${{ steps.version.outputs.version }}
+          name: DockManager-${{ steps.version.outputs.version }}
           path: installer/
           retention-days: 30
 
@@ -74,7 +74,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v4
         with:
-          name: Windows-Vertical-Dock-*
+          name: DockManager-*
           path: release-artifacts/
 
       - name: Get Version
@@ -87,18 +87,18 @@ jobs:
       - name: Create Release Archive
         run: |
           cd release-artifacts
-          zip -r ../Windows-Vertical-Dock-Setup-${{ steps.version.outputs.version }}.zip .
+          zip -r ../DockManager-${{ steps.version.outputs.version }}.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Windows Vertical Dock v${{ steps.version.outputs.version }}
+          name: Dock Manager v${{ steps.version.outputs.version }}
           body: |
-            ## Windows Vertical Dock v${{ steps.version.outputs.version }}
+            ## Dock Manager v${{ steps.version.outputs.version }}
             
             ### First Public Release
             
-            Windows Vertical Dock v${{ steps.version.outputs.version }} is the first installable version of the project.
+            Dock Manager v${{ steps.version.outputs.version }} is the first installable version of the project.
             
             ### Included
             
@@ -120,7 +120,7 @@ jobs:
             
             ### Installation
             
-            1. Download `Windows-Vertical-Dock-Setup-${{ steps.version.outputs.version }}.zip`
+            1. Download `DockManager-${{ steps.version.outputs.version }}.zip`
             2. Extract the archive
             3. Run `DockManager.exe`
             4. The dock will appear in the system tray
@@ -139,6 +139,6 @@ jobs:
             ### Feedback
             
             Please report issues or feature requests on the GitHub repository.
-          files: Windows-Vertical-Dock-Setup-${{ steps.version.outputs.version }}.zip
+          files: DockManager-${{ steps.version.outputs.version }}.zip
           draft: false
           prerelease: true
