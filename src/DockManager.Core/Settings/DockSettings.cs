@@ -70,6 +70,23 @@ public sealed class DockSettings
     /// <summary>How often the cursor is polled while the dock is hidden, in milliseconds.</summary>
     public int CursorPollIntervalMs { get; set; } = 40;
 
+    // ----- Phase 2: application aware hover panel -------------------------------------------
+
+    /// <summary>Reveal the secondary panel with an application's open items on hover.</summary>
+    public bool ShowAppItemsOnHover { get; set; } = true;
+
+    /// <summary>Show a small captured preview of a hovered window in the panel.</summary>
+    public bool ShowWindowPreviews { get; set; } = true;
+
+    /// <summary>Collapse several windows of one application into a single entry.</summary>
+    public bool GroupMultipleWindows { get; set; }
+
+    /// <summary>How long the cursor must rest on an application before the panel opens.</summary>
+    public int HoverDelayMs { get; set; } = 200;
+
+    /// <summary>Ids of integrations the user switched off (e.g. "chrome", "edge").</summary>
+    public List<string> DisabledIntegrations { get; set; } = [];
+
     public DockLayoutMetrics CreateLayoutMetrics() => DockLayoutMetrics.ForIconSize(IconSize);
 
     public DockVisibilityOptions CreateVisibilityOptions() => new()
@@ -101,6 +118,8 @@ public sealed class DockSettings
         copy.EdgeActivationPixels = Math.Clamp(copy.EdgeActivationPixels, 1, 24);
         copy.PanelOpacity = Math.Clamp(copy.PanelOpacity, 0.35d, 1d);
         copy.CursorPollIntervalMs = Math.Clamp(copy.CursorPollIntervalMs, 15, 250);
+        copy.HoverDelayMs = Math.Clamp(copy.HoverDelayMs, 0, 2000);
+        copy.DisabledIntegrations = copy.DisabledIntegrations is null ? [] : copy.DisabledIntegrations.ToList();
         return copy;
     }
 }
