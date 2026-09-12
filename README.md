@@ -1,13 +1,17 @@
 # Windows Vertical Dock
 
+[![GitHub Release](https://img.shields.io/github/v/release/Ram-Dev-tech/dock-Manager?label=version&color=brightgreen)](https://github.com/Ram-Dev-tech/dock-Manager/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-blue)](https://github.com/Ram-Dev-tech/dock-Manager)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 > **A lightweight, fully offline Windows vertical edge dock for launching apps, opening files and folders, and quickly switching between running applications and supported application tabs.**
 
 ```text
 Platform: Windows 10/11
 Mode: Offline-first
-Status: In Development
-Current Phase: Phase 3 (Complete)
+Status: Phase 3 Complete
 Version: 0.1.1
+Repository: github.com/Ram-Dev-tech/dock-Manager
 ```
 
 ## Download
@@ -18,7 +22,7 @@ Version: 0.1.1
 
 Download and run the Windows installer:
 
-**[Windows-Vertical-Dock-Setup-0.1.1.exe](https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe)**
+**[Windows-Vertical-Dock-Setup-0.1.1.exe](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe)**
 
 *No development environment required. Works offline after installation.*
 
@@ -26,7 +30,7 @@ Download and run the Windows installer:
 
 ### Alternative: Portable EXE
 
-**[DockManager-0.1.1.exe (Portable)](https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/DockManager-0.1.1.exe)**
+**[DockManager-0.1.1.exe (Portable)](https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe)**
 
 *Standalone executable. No installation required. Just download and run.*
 
@@ -38,7 +42,7 @@ You can also download and install directly from PowerShell:
 
 ```powershell
 # Download the installer
-Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
 
 # Run the installer
 Start-Process "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
@@ -48,7 +52,7 @@ Or for the portable version:
 
 ```powershell
 # Download the portable executable
-Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
 
 # Launch the application
 Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
@@ -197,14 +201,14 @@ Windows Vertical Dock
 
 **Option 1: Download the Installer (Recommended)**
 
-1. Download `Windows-Vertical-Dock-Setup-0.1.1.exe` from the [Releases page](https://github.com/your-repo/windows-vertical-dock/releases/tag/v0.1.1)
+1. Download `Windows-Vertical-Dock-Setup-0.1.1.exe` from the [Releases page](https://github.com/Ram-Dev-tech/dock-Manager/releases/tag/v0.1.1)
 2. Run the installer
 3. Launch Windows Vertical Dock from the Start Menu or desktop shortcut
 4. Move your cursor to the configured screen edge (left or right by default)
 
 **Option 2: Download Portable EXE**
 
-1. Download `DockManager-0.1.1.exe` from the [Releases page](https://github.com/your-repo/windows-vertical-dock/releases/tag/v0.1.1)
+1. Download `DockManager-0.1.1.exe` from the [Releases page](https://github.com/Ram-Dev-tech/dock-Manager/releases/tag/v0.1.1)
 2. Place it anywhere on your system (e.g., Desktop or Programs folder)
 3. Double-click to run
 
@@ -214,7 +218,7 @@ Open PowerShell and run:
 
 ```powershell
 # Download the installer
-Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\DockManager-Setup.exe"
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\DockManager-Setup.exe"
 
 # Run the installer
 Start-Process "$env:TEMP\DockManager-Setup.exe"
@@ -224,7 +228,7 @@ Or for the portable version:
 
 ```powershell
 # Download the portable executable
-Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+Invoke-WebRequest -Uri "https://github.com/Ram-Dev-tech/dock-Manager/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
 
 # Launch the application
 Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
@@ -250,8 +254,8 @@ The installed application works completely offline after installation.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/windows-vertical-dock.git
-cd windows-vertical-dock
+git clone https://github.com/Ram-Dev-tech/dock-Manager.git
+cd dock-Manager
 
 # Restore dependencies
 dotnet restore DockManager.sln
@@ -908,7 +912,7 @@ Prefer local implementations whenever possible.
 ## Project Structure
 
 ```text
-Windows-Vertical-Dock/
+dock-Manager/
 ├── .github/workflows/
 │   └── ci.yml                 CI/CD pipeline
 ├── docs/
