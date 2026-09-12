@@ -12,15 +12,47 @@ Version: 0.1.1
 
 ## Download
 
-### Windows
+### Windows Installer (Recommended)
 
 **Latest release: v0.1.1**
 
-Download the Windows installer:
+Download and run the Windows installer:
 
-**Windows-Vertical-Dock-Setup-0.1.1.exe**
+**[Windows-Vertical-Dock-Setup-0.1.1.exe](https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe)**
 
-No development environment is required. The application works offline after installation.
+*No development environment required. Works offline after installation.*
+
+---
+
+### Alternative: Portable EXE
+
+**[DockManager-0.1.1.exe (Portable)](https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/DockManager-0.1.1.exe)**
+
+*Standalone executable. No installation required. Just download and run.*
+
+---
+
+### Installation via Terminal (PowerShell)
+
+You can also download and install directly from PowerShell:
+
+```powershell
+# Download the installer
+Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
+
+# Run the installer
+Start-Process "$env:TEMP\Windows-Vertical-Dock-Setup-0.1.1.exe"
+```
+
+Or for the portable version:
+
+```powershell
+# Download the portable executable
+Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+
+# Launch the application
+Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
+```
 
 ---
 
@@ -163,62 +195,98 @@ Windows Vertical Dock
 
 ### For Normal Users (Windows)
 
-1. Download `Windows-Vertical-Dock-Setup-0.1.1.exe`
+**Option 1: Download the Installer (Recommended)**
+
+1. Download `Windows-Vertical-Dock-Setup-0.1.1.exe` from the [Releases page](https://github.com/your-repo/windows-vertical-dock/releases/tag/v0.1.1)
 2. Run the installer
-3. Follow the installation steps
-4. Launch Windows Vertical Dock
-5. Move your cursor to the configured screen edge (default: left)
+3. Launch Windows Vertical Dock from the Start Menu or desktop shortcut
+4. Move your cursor to the configured screen edge (left or right by default)
 
-The installed application requires **no additional runtime** — it is self-contained.
+**Option 2: Download Portable EXE**
 
-### Requirements
+1. Download `DockManager-0.1.1.exe` from the [Releases page](https://github.com/your-repo/windows-vertical-dock/releases/tag/v0.1.1)
+2. Place it anywhere on your system (e.g., Desktop or Programs folder)
+3. Double-click to run
 
-- Windows 10 or Windows 11
-- No additional software required
+**Option 3: Install via PowerShell**
+
+Open PowerShell and run:
+
+```powershell
+# Download the installer
+Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/Windows-Vertical-Dock-Setup-0.1.1.exe" -OutFile "$env:TEMP\DockManager-Setup.exe"
+
+# Run the installer
+Start-Process "$env:TEMP\DockManager-Setup.exe"
+```
+
+Or for the portable version:
+
+```powershell
+# Download the portable executable
+Invoke-WebRequest -Uri "https://github.com/your-repo/windows-vertical-dock/releases/download/v0.1.1/DockManager-0.1.1.exe" -OutFile "$env:USERPROFILE\Desktop\DockManager.exe"
+
+# Launch the application
+Start-Process "$env:USERPROFILE\Desktop\DockManager.exe"
+```
+
+**Requirements:**
+- Windows 10 version 1903 or later / Windows 11
+- .NET 8.0 Runtime (included with installer, or download separately from Microsoft)
+
+The installed application works completely offline after installation.
 
 ---
 
 ## Development
 
-### Requirements
+### Prerequisites
 
-- .NET SDK 8.0
-- Windows 10/11 (for running the application)
+- Windows 10/11
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Visual Studio 2022 (recommended) or VS Code with C# extension
 
-### Setup
+### Clone and Build
 
 ```bash
-git clone <repository-url>
-cd Windows-Vertical-Dock
+# Clone the repository
+git clone https://github.com/your-repo/windows-vertical-dock.git
+cd windows-vertical-dock
+
+# Restore dependencies
 dotnet restore DockManager.sln
-```
 
-### Run Development Build
-
-```bash
-dotnet run --project src/DockManager.App
-```
-
-### Build Release
-
-```bash
+# Build in Release mode
 dotnet build DockManager.sln --configuration Release
+
+# Run tests (optional)
+dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj
+
+# Run the application in development
+dotnet run --project src/DockManager.App/DockManager.App.csproj
 ```
 
-### Run Tests
+### Publish Self-Contained Executable
 
 ```bash
-dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj
+# Create a self-contained single-file executable
+dotnet publish src/DockManager.App/DockManager.App.csproj ^
+    --configuration Release ^
+    --runtime win-x64 ^
+    --self-contained true ^
+    -p:PublishSingleFile=true ^
+    -p:IncludeNativeLibrariesForSelfExtract=true ^
+    -p:EnableCompressionInSingleFile=true ^
+    --output publish
+
+# The executable will be at: publish/DockManager.exe
 ```
 
-### Build Single-File Executable
+Or use the provided build script on Windows:
 
 ```powershell
-# On Windows
 .\build.ps1 -Publish
 ```
-
-This produces a self-contained executable in the `publish` folder that requires no runtime installation.
 
 ---
 
@@ -237,6 +305,11 @@ The production Windows build creates an installable `.exe`.
 5. Verify the installer on Windows
 6. Verify the installed application
 7. Verify offline functionality
+
+**Output:**
+
+- `publish/DockManager.exe` - Self-contained portable executable
+- For installer creation, use WiX Toolset or Inno Setup with the published output
 
 ---
 
