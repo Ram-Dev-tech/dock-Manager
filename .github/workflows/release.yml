@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Release
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore DockManager.sln
+
+      - name: Build Release
+        run: dotnet build DockManager.sln --configuration Release --no-restore
+
+      - name: Run Tests
+        run: dotnet test tests/DockManager.Core.Tests/DockManager.Core.Tests.csproj --configuration Release --no-build
+
+      - name: Publish Single-File Executable
+        run: |
+          dotnet publish src/DockManager.App/DockManager.App.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=embedded `
+            --output publish
+          
+      - name: Get Version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -oP '<Version>\K[^<]+' Directory.Build.props)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version $VERSION"
+
+      - name: Create Installer Directory
+        run: |
+          mkdir installer
+          copy publish\DockManager.exe installer\
+          copy LICENSE installer\
+          copy README.md installer\
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Windows-Vertical-Dock-${{ steps.version.outputs.version }}
+          path: installer/
+          retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: build-windows
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Windows-Vertical-Dock-*
+          path: release-artifacts/
+
+      - name: Get Version
+        id: version
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release Archive
+        run: |
+          cd release-artifacts
+          zip -r ../Windows-Vertical-Dock-Setup-${{ steps.version.outputs.version }}.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Windows Vertical Dock v${{ steps.version.outputs.version }}
+          body: |
+            ## Windows Vertical Dock v${{ steps.version.outputs.version }}
+            
+            ### First Public Release
+            
+            Windows Vertical Dock v${{ steps.version.outputs.version }} is the first installable version of the project.
+            
+            ### Included
+            
+            - Vertical dock on left or right edge
+            - Auto reveal/hide with smooth animation
+            - Pin applications, files, and folders
+            - Detect and switch to running applications
+            - Chrome and Edge tab integration
+            - VS Code project/document integration
+            - File Explorer folder integration
+            - Groups and separators for organization
+            - Drag-and-drop reordering
+            - Configurable global shortcuts
+            - Light/Dark/System theme support
+            - Multi-monitor support with DPI scaling
+            - Startup with Windows
+            - Tray icon
+            - Fully offline operation
+            
+            ### Installation
+            
+            1. Download `Windows-Vertical-Dock-Setup-${{ steps.version.outputs.version }}.zip`
+            2. Extract the archive
+            3. Run `DockManager.exe`
+            4. The dock will appear in the system tray
+            5. Move your cursor to the left edge of your screen to reveal the dock
+            
+            ### Offline
+            
+            The application's core functionality works without an internet connection.
+            
+            ### Known Limitations
+            
+            - Pre-1.0 release (some features may change)
+            - Single-instance only (second launch focuses existing instance)
+            - Portable mode only (no installer yet)
+            
+            ### Feedback
+            
+            Please report issues or feature requests on the GitHub repository.
+          files: Windows-Vertical-Dock-Setup-${{ steps.version.outputs.version }}.zip
+          draft: false
+          prerelease: true
