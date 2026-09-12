@@ -1119,7 +1119,16 @@ public sealed partial class DockWindow : Window
     private void InsertSeparatorBelow(DockItemViewModel viewModel)
     {
         var sectionItems = _services.Items.GetItems(viewModel.Section);
-        var index = sectionItems.IndexOf(viewModel.Item);
+        var index = -1;
+        for (var i = 0; i < sectionItems.Count; i++)
+        {
+            if (ReferenceEquals(sectionItems[i], viewModel.Item))
+            {
+                index = i;
+                break;
+            }
+        }
+
         if (index < 0)
         {
             return;

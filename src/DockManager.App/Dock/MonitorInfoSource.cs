@@ -87,7 +87,7 @@ internal sealed class MonitorInfoSource
 
         try
         {
-            Win32.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (monitor, _, _, _) =>
+            Win32.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr monitor, IntPtr hdc, ref Win32.RECT rect, IntPtr lParam) =>
             {
                 var info = new Win32.MONITORINFOEX { cbSize = Marshal.SizeOf<Win32.MONITORINFOEX>() };
                 if (Win32.GetMonitorInfoEx(monitor, ref info))
@@ -133,7 +133,7 @@ internal sealed class MonitorInfoSource
 
         try
         {
-            Win32.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (monitor, _, _, _) =>
+            Win32.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr monitor, IntPtr hdc, ref Win32.RECT rect, IntPtr lParam) =>
             {
                 if (DeviceNameOf(monitor).Equals(deviceName, StringComparison.OrdinalIgnoreCase))
                 {
