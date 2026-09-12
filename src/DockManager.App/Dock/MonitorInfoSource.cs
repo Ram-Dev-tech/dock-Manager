@@ -29,10 +29,10 @@ internal sealed record MonitorGeometry(Win32.RECT WorkArea, double DpiScale, Int
 }
 
 /// <summary>One connected display, as offered in the settings screen.</summary>
-internal sealed record MonitorSummary(string DeviceName, Win32.RECT WorkArea, bool IsPrimary)
+public sealed record MonitorSummary(string DeviceName, int WorkWidth, int WorkHeight, bool IsPrimary)
 {
     public string Description
-        => $"{DeviceName.Replace("\\\\.\\", string.Empty)} — {WorkArea.Width}×{WorkArea.Height}"
+        => $"{DeviceName.Replace("\\\\.\\", string.Empty)} — {WorkWidth}×{WorkHeight}"
            + (IsPrimary ? " (primary)" : string.Empty);
 }
 
@@ -94,7 +94,8 @@ internal sealed class MonitorInfoSource
                 {
                     found.Add(new MonitorSummary(
                         info.szDevice ?? string.Empty,
-                        info.rcWork,
+                        info.rcWork.Width,
+                        info.rcWork.Height,
                         (info.dwFlags & 1) != 0));
                 }
 
